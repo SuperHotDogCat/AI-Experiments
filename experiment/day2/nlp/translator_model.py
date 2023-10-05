@@ -5,7 +5,7 @@ from torch import cuda
 from sentence_data import EOS_ID
 
 # GPU上で計算を行う場合は，この変数を非Noneの整数、又は"cuda"にする
-gpu_id = None
+gpu_id = "cuda" if torch.cuda.is_available() else "cpu"
 
 # Encoder-Decoderモデルを用いた翻訳モデルの定義
 class TranslatorModel(nn.Module):
