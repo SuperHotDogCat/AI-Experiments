@@ -15,7 +15,9 @@ class RulebaseAgent(abstract_agent.Agent):
     def __init__(self, env):
         self.observation_num = {key: val.n for key, val in env.observation_space.spaces.items()}
         self.action_num = env.action_space.n
-
+        self.env = env
+        self.height = self.env.env.world_size[0]
+        self.width = self.env.env.world_size[1]
     def act_and_train(self, obs, reward, done):
         self.train(obs, reward)
         action = self.act(obs)
@@ -40,8 +42,14 @@ class RulebaseAgent(abstract_agent.Agent):
         #     action =  # here #
         # else:
         #     action =  # here #
-        raise NotImplementedError()
+
+        #OrderedDict([('x', 3), ('y', 2)]) obs["x"] = 3のように使う
+        #0->右 1->下
         # ------------
+        if self.width-1 != obs["x"]:
+            action = 0
+        else:
+            action = 1
         return action
 
     def train(self, obs, reward):

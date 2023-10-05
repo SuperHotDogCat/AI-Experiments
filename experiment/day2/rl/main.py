@@ -7,8 +7,8 @@ from print_buffer import PrintBuffer
 # 環境と agent を用意
 env = gym.make('EasyMaze-v0')
 # env = gym.make('CartPole-v0')
-agent = agents.RandomAgent(env)
-# agent = agents.RulebaseAgent(env)
+#agent = agents.RandomAgent(env)
+agent = agents.RulebaseAgent(env)
 # agent = agents.TableQAgent(env)
 # agent = agents.DQNAgent(env)
 
@@ -31,6 +31,7 @@ n_episode = {'train': 100, 'test': 100}
 # 何step 経ったらepisode を強制終了するか
 n_max_time = {'train': 300, 'test': 300}
 # ゲームを繰り返す
+mean_clear_episodes = {"train":[0] * n_episode["train"], "test":[0] * n_episode["test"]}
 for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
     sum_of_all_rewards = 0.0  # episode ごとの average reward を出すために、総計を覚えておく
     for i_episode in range(n_episode[interact_mode]):  # 各episode について
@@ -65,11 +66,15 @@ for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
                 # ゲーム終了時(ゲームクリア) の処理
                 if prints_detail[interact_mode]:
                     print('Episode finished.')
+                    mean_clear_episodes[interact_mode][i_episode] = time if i_episode == 0 else \
+                        mean_clear_episodes[interact_mode][i_episode-1] + (time - mean_clear_episodes[interact_mode][i_episode-1]) / (i_episode + 1)
                 break
         
         # ゲーム終了時(時間切れ) の処理
         if prints_detail[interact_mode] and not done:
             print('{0} steps have past, but the agent could not reach the goal.'.format(time))
+            mean_clear_episodes[interact_mode][i_episode] = time if i_episode == 0 else \
+                        mean_clear_episodes[interact_mode][i_episode-1] + (time - mean_clear_episodes[interact_mode][i_episode-1]) / (i_episode + 1)
         # episode が終了したことを agent に伝える
         if interact_mode == 'train':
             # 最後に学習もしてもらう
@@ -83,3 +88,8 @@ for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
             print(interact_mode, 'episode:', i_episode + 1, 'T:', '???',
                   'R:', average_rewards, 'statistics:', agent.get_statistics())
     print(interact_mode, 'finished.')
+
+for interact_mode in ['train', 'test']:
+    print(f"{interact_mode}:")
+    for i_episode in range(n_episode[interact_mode]):
+        print(f"{i_episode+1}: {mean_clear_episodes[interact_mode][i_episode]}")
