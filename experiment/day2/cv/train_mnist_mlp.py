@@ -9,7 +9,7 @@ from torch.utils.data import DataLoader
 from torchvision import datasets, transforms
 
 from network import MLP
-
+# python train_mnist_mlp.py -g 0 -u 3
 def main():
 	parser = argparse.ArgumentParser(description='Pytorch example: MNIST')
 	parser.add_argument('--batchsize', '-b', type=int, default=100,
@@ -42,7 +42,7 @@ def main():
 	# Set model to GPU
 	if args.gpu >= 0:
 		# Make a specified GPU current
-		device = 'cuda:' + str(args.gpu)
+		device = 'cuda:' + str(args.gpu) if torch.cuda.is_available() else "mps"
 		net = net.to(device)
 
 	# Setup a loss and an optimizer

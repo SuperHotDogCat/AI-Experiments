@@ -1,0 +1,65 @@
+課題4.2.1 cudaがなければmpsを使用するようにした
+課題4.2.2 image.png(label: 5)を入力したら8と返してきた。ポンコツだった。
+課題4.2.3 OK
+課題4.2.4 torch.topK関数をつかって出力させた。[[8,5,6]]になった。test_mnist_mlp_top3.pyで実行した
+課題4.2.5 unit: 3の場合 時間: 350.20s,精度: loss 579.584, acc 80%未満
+         unit: 10000の場合 時間: 685.01s,精度: loss 73.347, acc 95%とか
+課題4.2.6 loss 51.986, acc 95%とか
+課題4.2.7 
+[epoch 1] loss: 32.251
+[epoch 2] loss: 32.233
+[epoch 3] loss: 32.217
+[epoch 4] loss: 32.206
+[epoch 5] loss: 32.191
+[epoch 6] loss: 32.177
+[epoch 7] loss: 32.166
+[epoch 8] loss: 32.148
+[epoch 9] loss: 32.126
+[epoch 10] loss: 32.111
+[epoch 11] loss: 32.100
+[epoch 12] loss: 32.083
+[epoch 13] loss: 32.064
+[epoch 14] loss: 32.037
+[epoch 15] loss: 32.002
+[epoch 16] loss: 31.992
+[epoch 17] loss: 31.968
+[epoch 18] loss: 31.950
+[epoch 19] loss: 31.924
+[epoch 20] loss: 31.869
+
+課題4.2.8 カス結果に、acc 13.5%
+課題4.2.9
+[epoch 1] loss: 32.220
+[epoch 2] loss: 31.825
+[epoch 3] loss: 30.695
+[epoch 4] loss: 28.866
+[epoch 5] loss: 27.805
+[epoch 6] loss: 27.246
+[epoch 7] loss: 26.606
+[epoch 8] loss: 26.209
+[epoch 9] loss: 25.906
+[epoch 10] loss: 25.674
+[epoch 11] loss: 25.141
+[epoch 12] loss: 25.019
+[epoch 13] loss: 24.738
+[epoch 14] loss: 24.524
+[epoch 15] loss: 23.948
+[epoch 16] loss: 23.524
+[epoch 17] loss: 23.123
+[epoch 18] loss: 22.909
+[epoch 19] loss: 22.730
+[epoch 20] loss: 22.433
+
+test
+Accuracy of airplane : 30 %
+Accuracy of automobile : 30 %
+Accuracy of  bird : 25 %
+Accuracy of   cat : 35 %
+Accuracy of  deer : 40 %
+Accuracy of   dog : 35 %
+Accuracy of  frog : 60 %
+Accuracy of horse : 45 %
+Accuracy of  ship : 45 %
+Accuracy of truck : 30 %
+Accuracy : 37.500 %
+ましになりました。

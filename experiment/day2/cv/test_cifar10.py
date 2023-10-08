@@ -9,7 +9,7 @@ from torchvision import datasets, transforms
 
 from network import CifarCNN
 from dataset import MyCifarDataset
-
+# python test_cifar10.py -g 0 -m result/model_final
 def main():
 	parser = argparse.ArgumentParser(description='Pytorch example: CIFAR-10')
 	parser.add_argument('--batchsize', '-b', type=int, default=100,
@@ -33,7 +33,7 @@ def main():
 	# Set model to GPU
 	if args.gpu >= 0:
 		# Make a specified GPU current
-		device = 'cuda:' + str(args.gpu)
+		device = 'cuda:' + str(args.gpu) if torch.cuda.is_available() else "mps"
 		net = net.to(device)
 
 	# Load the CIFAR-10

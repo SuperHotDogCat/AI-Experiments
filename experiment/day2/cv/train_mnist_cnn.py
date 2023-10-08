@@ -32,8 +32,8 @@ def main():
 	print('')
 
 	# Set up a neural network to train
-	net = MLP(args.unit, 28*28, 10)
-	#net = MnistCNN(10)
+	#net = MLP(args.unit, 28*28, 10)
+	net = MnistCNN(10)
 
 	# Load designated network weight 
 	if args.resume:
@@ -41,7 +41,7 @@ def main():
 	# Set model to GPU
 	if args.gpu >= 0:
 		# Make a specified GPU current
-		device = 'cuda:' + str(args.gpu)
+		device = 'cuda:' + str(args.gpu) if torch.cuda.is_available() else "mps"
 		net = net.to(device)
 
 	# Setup a loss and an optimizer

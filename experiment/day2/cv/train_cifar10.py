@@ -42,7 +42,7 @@ def main():
 	# Set model to GPU
 	if args.gpu >= 0:
 		# Make a specified GPU current
-		device = 'cuda:' + str(args.gpu)
+		device = 'cuda:' + str(args.gpu) if torch.cuda.is_available() else "mps"
 		net = net.to(device)
 
 	# Setup a loss and an optimizer

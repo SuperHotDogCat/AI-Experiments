@@ -63,8 +63,10 @@ class  MnistCNN(nn.Module):
 		"""
 		super(MnistCNN, self).__init__()
 		# Search or See https://pytorch.org/docs/stable/nn.html for information
-		self.conv1 = nn.Conv2d("Fill here")	# 1 * 28 * 28 -> 5 * 14 * 14
-		self.conv2 = nn.Conv2d("Fill here")	# 5 * 14 * 14 -> 10 * 7 * 7
+		self.conv1 = nn.Conv2d(in_channels = 1, out_channels = 5, \
+			kernel_size = 5, padding = 2, stride = 2)	# 1 * 28 * 28 -> 5 * 14 * 14
+		self.conv2 = nn.Conv2d(in_channels = 5, out_channels = 10, \
+			kernel_size = 5, padding = 2, stride = 2)	# 5 * 14 * 14 -> 10 * 7 * 7
 		self.fc = nn.Linear(10 * 7 * 7, n_out)	# 490(=10*7*7) -> n_out
 
 	def forward(self, x):
