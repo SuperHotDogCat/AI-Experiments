@@ -5,8 +5,8 @@ import os
 import torch
 from torchvision import transforms
 from PIL import Image
-from network_db import Vgg16
-# python create_db.py -d data/mini_cifar/train/ -g 0
+from network_db_overwritten import Vgg16
+# python create_db_overwritten.py -d data/mini_cifar/train/ -g 0
 def createDatabase(paths, gpu):
 	# Create model
 	model = Vgg16()

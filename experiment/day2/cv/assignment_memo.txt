@@ -63,3 +63,25 @@ Accuracy of  ship : 45 %
 Accuracy of truck : 30 %
 Accuracy : 37.500 %
 ましになりました。
+
+課題4.3.1 OK
+課題4.3.2 
+実行コマンド python search.py -i data/mini_cifar/test/airplane/airbus_s_001414.png -g 0
+src_feature's shape:  torch.Size([1, 4096])
+data/mini_cifar/train/./bird/wagtail_s_001424.png
+data/mini_cifar/train/./airplane/biplane_s_001134.png
+data/mini_cifar/train/./airplane/fighter_aircraft_s_000450.png
+data/mini_cifar/train/./airplane/jetliner_s_001797.png
+data/mini_cifar/train/./airplane/airbus_s_002169.png
+課題4.3.3 
+実行コマンド python search_overwritten.py -i data/mini_cifar/test/airplane/airbus_s_001414.png
+src_feature's shape:  torch.Size([1, 1000])
+data/mini_cifar/train/./airplane/airbus_s_002169.png
+data/mini_cifar/train/./airplane/stealth_bomber_s_001537.png
+data/mini_cifar/train/./airplane/jumbo_jet_s_000551.png
+data/mini_cifar/train/./airplane/jumbojet_s_000520.png
+data/mini_cifar/train/./airplane/hangar_queen_s_000152.png
+結果が変化してしまった。
+
+課題4.3.3
+MNISTの訓練 python train_mnist_mlp.py -g 0   

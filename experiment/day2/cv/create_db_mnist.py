@@ -5,29 +5,32 @@ import os
 import torch
 from torchvision import transforms
 from PIL import Image
-from network_db import Vgg16
-# python create_db.py -d data/mini_cifar/train/ -g 0
-def createDatabase(paths, gpu):
+from network import MLP
+from torch import nn
+# python create_db_mnist.py -d data/mini_mnist/train/ -g 0
+def createDatabase(paths, args):
 	# Create model
-	model = Vgg16()
+	model = MLP(args.unit, 28*28, 10)
+	model.load_state_dict(torch.load(args.model))
+	model = nn.Sequential(model.fc1, model.fc2)
+	model.eval()
+
 	# Set transformation
-	normalize = transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225])
+	#normalize = transforms.Normalize(mean=[0.], std=[0.5]) 学習する時normalizeはなかったので割愛
 	data_preprocess = transforms.Compose([
-		transforms.Resize(256),
-		transforms.CenterCrop(224),
 		transforms.ToTensor(),
-		normalize])
+		nn.Flatten()])
 	# Set model to GPU/CPU
 	device = 'cpu'
-	if gpu >= 0:
+	if args.gpu >= 0:
 		# Make a specified GPU current
-		device = 'cuda:' + str(gpu) if torch.cuda.is_available() else "mps"
+		device = 'cuda:' + str(args.gpu) if torch.cuda.is_available() else "mps"
 	model = model.to(device)
 	# Get features
 	print("device: ", device)
 	with torch.no_grad():
 		features = torch.cat(
-			[model(data_preprocess(Image.open(path, 'r').convert('RGB')).unsqueeze(0).to(device)).to('cpu')
+			[model(data_preprocess(Image.open(path, 'r')).to(device)).to('cpu')
 				for path in paths],
 			dim = 0
 		)
@@ -41,6 +44,10 @@ def main():
 						help='GPU ID (negative value indicates CPU)')
 	parser.add_argument('--dataset', '-d', default='default_dataset_path',
 						help='Directory for creating database')
+	parser.add_argument('--unit', '-u', type=int, default=1000,
+						help='Number of units')
+	parser.add_argument('--model', '-m', default='result/model_final',
+						help='Path to the model for test')
 	args = parser.parse_args()
 
 	data_dir = args.dataset
@@ -50,10 +57,10 @@ def main():
 
 	assert len(paths) != 0 
 	# Create the database
-	features = createDatabase(paths, args.gpu)
+	features = createDatabase(paths, args)
 	# Save the data of database
-	torch.save(features, 'result/feature.pt')
-	torch.save(paths, 'result/path.pt')
+	torch.save(features, 'result/feature_mlp.pt')
+	torch.save(paths, 'result/path_mlp.pt')
 
 if __name__ == '__main__':
 	main()

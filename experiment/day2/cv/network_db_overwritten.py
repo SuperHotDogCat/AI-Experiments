@@ -44,6 +44,4 @@ class Vgg16(torch.nn.Module):
 		x = torch.flatten(x, 1)
 		for i,model in enumerate(self.sequentials):
 			x = model(x)
-			# Return output of 1st layer in sequentials
-			if i == 3:
-				return x
+		return x

@@ -3,8 +3,8 @@ import argparse
 import torch
 from torchvision import transforms
 from PIL import Image
-from network_db import Vgg16
-# python search.py -i data/mini_cifar/test/airplane/airbus_s_001414.png
+from network_db_overwritten import Vgg16
+# python search_overwritten.py -i data/mini_cifar/test/airplane/airbus_s_001414.png
 def search(src, db_features, db_paths, k, gpu):
 	model = Vgg16()
 	# Set transformation
