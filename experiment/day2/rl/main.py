@@ -8,8 +8,8 @@ from print_buffer import PrintBuffer
 env = gym.make('EasyMaze-v0')
 # env = gym.make('CartPole-v0')
 #agent = agents.RandomAgent(env)
-agent = agents.RulebaseAgent(env)
-# agent = agents.TableQAgent(env)
+#agent = agents.RulebaseAgent(env)
+agent = agents.TableQAgent(env)
 # agent = agents.DQNAgent(env)
 
 
@@ -66,15 +66,15 @@ for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
                 # ゲーム終了時(ゲームクリア) の処理
                 if prints_detail[interact_mode]:
                     print('Episode finished.')
-                    mean_clear_episodes[interact_mode][i_episode] = time if i_episode == 0 else \
-                        mean_clear_episodes[interact_mode][i_episode-1] + (time - mean_clear_episodes[interact_mode][i_episode-1]) / (i_episode + 1)
+                    mean_clear_episodes[interact_mode][i_episode] = time + 1 if i_episode == 0 else \
+                        mean_clear_episodes[interact_mode][i_episode-1] + (time + 1 - mean_clear_episodes[interact_mode][i_episode-1]) / (i_episode + 1)
                 break
         
         # ゲーム終了時(時間切れ) の処理
         if prints_detail[interact_mode] and not done:
             print('{0} steps have past, but the agent could not reach the goal.'.format(time))
-            mean_clear_episodes[interact_mode][i_episode] = time if i_episode == 0 else \
-                        mean_clear_episodes[interact_mode][i_episode-1] + (time - mean_clear_episodes[interact_mode][i_episode-1]) / (i_episode + 1)
+            mean_clear_episodes[interact_mode][i_episode] = time + 1 if i_episode == 0 else \
+                        mean_clear_episodes[interact_mode][i_episode-1] + (time + 1 - mean_clear_episodes[interact_mode][i_episode-1]) / (i_episode + 1)
         # episode が終了したことを agent に伝える
         if interact_mode == 'train':
             # 最後に学習もしてもらう
