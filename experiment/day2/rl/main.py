@@ -45,8 +45,16 @@ for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
                 # 環境を描画
                 if render_mode == 'human':
                     env.render(render_mode)
+                    try:
+                        print(agent.q_table_to_str())
+                    except:
+                        continue
                 else:
                     render_buffer.prints(env.render(render_mode))
+                    try:
+                        print(agent.q_table_to_str())
+                    except:
+                        continue
             # agentに観測から行動を選択してもらう
             if interact_mode == 'train':
                 # 学習もしてもらう
@@ -93,3 +101,6 @@ for interact_mode in ['train', 'test']:
     print(f"{interact_mode}:")
     for i_episode in range(n_episode[interact_mode]):
         print(f"{i_episode+1}: {mean_clear_episodes[interact_mode][i_episode]}")
+print("train最初の10episodesの平均step数: ", mean_clear_episodes["train"][10-1])
+last_10_sum = mean_clear_episodes["train"][n_episode["train"]-1] * n_episode["train"] - mean_clear_episodes["train"][n_episode["train"]-10-1] * (n_episode["train"] - 10)
+print("train最後の10episodesの平均step数: ", last_10_sum / 10)

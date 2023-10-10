@@ -31,10 +31,10 @@ class TableQAgent(abstract_agent.Agent):
 
     def act_and_train(self, obs, reward, done):
         self.train(obs, reward)
-        return self.select_action(obs)
+        return self.select_action(obs, "train")
 
     def act(self, obs):
-        return self.select_action(obs)
+        return self.select_action(obs, "test")
 
     def stop_episode_and_train(self, obs, reward, done=False):
         self.train(obs, reward)
@@ -97,11 +97,11 @@ class TableQAgent(abstract_agent.Agent):
         # 観測を保存
         self.last_obs = obs
 
-    def select_action(self, obs):
+    def select_action(self, obs, mode):
         obs_key = self.observation_to_key(obs)
         if obs_key in self.q_table:
             # 観測から行動を決める
-            action = self.epsilon_greedy(obs_key)
+            action = self.epsilon_greedy(obs_key, mode)
         else:
             # Q値がまだ定まっていないのでランダムに動く
             action = np.random.randint(self.action_num)
@@ -111,7 +111,7 @@ class TableQAgent(abstract_agent.Agent):
     def observation_to_key(self, obs):
         return tuple(obs.values())
 
-    def epsilon_greedy(self, obs_key):
+    def epsilon_greedy(self, obs_key, mode):
         # 次の行動を epsilon-greedy ( max_a Q(s, a) )で決める
 
         # exploration (探索)
@@ -137,7 +137,10 @@ class TableQAgent(abstract_agent.Agent):
         # action に確率 e で random_action が、確率 1-e でmax_q_action が入るようにしてください。
         # Hint: np.random.choice() を使うとよいでしょう。
         # ------------
-        action = np.random.choice([max_q_action, random_action], p = [1-self.exploration_prob, self.exploration_prob])# here #
+        if mode == "train":
+            action = np.random.choice([max_q_action, random_action], p = [1-self.exploration_prob, self.exploration_prob])# here #
+        else:
+            action = max_q_action
         #raise NotImplementedError()
         # ------------
         return action
