@@ -8,9 +8,9 @@ from print_buffer import PrintBuffer
 env = gym.make('EasyMaze-v0')
 # env = gym.make('CartPole-v0')
 #agent = agents.RandomAgent(env)
-# agent = agents.RulebaseAgent(env)
-#agent = agents.TableQAgent(env)
-agent = agents.DQNAgent(env)
+#agent = agents.RulebaseAgent(env)
+agent = agents.TableQAgent(env)
+#agent = agents.DQNAgent(env)
 
 
 # 描画設定
@@ -45,8 +45,16 @@ for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
                 # 環境を描画
                 if render_mode == 'human':
                     env.render(render_mode)
+                    try:
+                        print(agent.q_table_to_str())
+                    except:
+                        continue
                 else:
                     render_buffer.prints(env.render(render_mode))
+                    try:
+                        print(agent.q_table_to_str())
+                    except:
+                        continue
             # agentに観測から行動を選択してもらう
             if interact_mode == 'train':
                 # 学習もしてもらう
@@ -88,6 +96,7 @@ for interact_mode in ['train', 'test']:  # 一周目: train, 二周目: test
             print(interact_mode, 'episode:', i_episode + 1, 'T:', '???',
                   'R:', average_rewards, 'statistics:', agent.get_statistics())
     print(interact_mode, 'finished.')
+
 for interact_mode in ['train', 'test']:
     print(f"{interact_mode}:")
     for i_episode in range(n_episode[interact_mode]):
