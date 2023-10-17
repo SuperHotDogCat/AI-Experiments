@@ -74,3 +74,13 @@ def UpSampling1D(input):
     repeats = [1 for _ in range(len(input.shape))] #(1,1,1,1,....)
     repeats[1] = 2 # dim = 1のところを2回繰り返す
     return input.repeat(*repeats)
+
+def ResidualConnectUpSampling1D(nn.Module):
+    def __init__(self, in_channels, out_channels, type='1d', leaky=False, downsample=False, norm='batch', k=None,\
+                 s=None, padding='same', G = None):
+        super().__init__()
+        self.convnormrelu = ConvNormRelu(in_channels, out_channels, type=type, leaky=leaky, downsample=downsample, norm=norm, k=k, s=s, padding=padding, G=G)
+    def forward(self, input_data):
+        input_data = UpSampling1D(input_data) + input_data
+        input_data = self.convnormrelu(input_data)
+        return input_data
