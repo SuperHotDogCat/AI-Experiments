@@ -21,6 +21,33 @@ def torch_mel_spectograms(X_audio):
     input_data = stft @ mel_spect_input
     input_data = torch.log(input_data + 1e-6)
     return input_data
+"""
+input_dataはTensorflow準拠で作ったため、場合によってはTensorの形状を変更するべきなことに注意
+例: Tensorflow: (batch, height, width, channels), Pytorch: (batch, channels, height, width)
+"""
+class D_patchgan(nn.Module):
+    def __init__(self, in_channels, n_downsampling=2, norm='batch', reuse=False, is_training=False,):
+        ndf = 64
+        self.conv1d = nn.Conv1d(in_channels, out_channels=ndf, kernel_size=4, stride=2, padding="same")
+        self.leaky_relu = nn.LeakyReLU(0.2)
+        modulelist = nn.ModuleList([])
+        for n in range(1, n_downsampling):
+            nf_mult = min(2**n, 8)
+            if n == 1:
+                modulelist.append(ConvNormRelu(ndf, ndf * nf_mult, type = "1d", downsample=True, norm=norm, leaky=True))
+                prev_channels = ndf * nf_mult
+            else:
+                modulelist.append(ConvNormRelu(prev_channels, ndf * nf_mult, type = "1d", downsample=True, norm=norm, leaky=True))
+                prev_channels = ndf * nf_mult
+        nf_mult = min(2**n_downsampling, 8)
+        modulelist.append(ConvNormRelu(prev_channels, ndf * nf_mult, type = "1d", norm=norm, leaky=True, k=4, s=1))
+        modulelist.append(nn.Conv1d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding="same"))
+        self.convnormrelu = nn.Sequential(*modulelist)
+    def forward(self, input_data):
+        input_data = self.conv1d(input_data)
+        input_data = self.leaky_relu(input_data)
+        input_data = self.convnormrelu(input_data)
+        return input_data
 
 class Audio2Pose(nn.Module):
     def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, pose_size = 64):

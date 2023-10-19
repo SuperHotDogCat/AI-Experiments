@@ -13,6 +13,7 @@ from tqdm import tqdm
 from logging import getLogger
 import logging
 logging.basicConfig()
+#python -m data.train_test_data_extraction.extract_data_for_training --base_dataset_path ../Gestures --speaker shelly -np 8 
 
 logger = getLogger(__name__)
 
@@ -88,7 +89,7 @@ if __name__ == "__main__":
 
 
     intervals_unique = df['interval_id'].unique()
-    print "Number of unique intervals to save: %s" % (len(intervals_unique))
+    print(f"Number of unique intervals to save: {len(intervals_unique)}")
 
 
     intervals = np.array_split(intervals_unique, args.num_processes)

@@ -1,7 +1,7 @@
 import threading
 from functools import partial
 import numpy as np
-from keras.utils import GeneratorEnqueuer
+#from keras.utils import GeneratorEnqueuer
 from common.pose_logic_lib import normalize_relative_keypoints, preprocess_to_relative, \
     decode_pose_normalized_keypoints, get_pose, decode_pose_normalized_keypoints_no_scaling
 import logging
@@ -10,14 +10,14 @@ from logging import getLogger
 import pandas as pd
 logger = getLogger(__name__)
 
-
+"""
 def load_train(process_row, batch_size, df, batch_generator, in_memory=False, workers=7, max_queue_size=128, use_multiprocessing=True):
     train_generator, num_samples = load_set('train', process_row, batch_size, df, batch_generator=batch_generator, is_train=True, in_memory=in_memory)
     enqueuer = GeneratorEnqueuer(train_generator, use_multiprocessing=use_multiprocessing)
     enqueuer.start(workers=workers, max_queue_size=max_queue_size)
     output_generator = enqueuer.get()
     return output_generator , num_samples
-
+"""
 
 def load_set(set_name, process_npz_row, batch_size, df, batch_generator, is_train=True, in_memory=False):
     df = df[df['dataset'] == set_name]
