@@ -2,9 +2,25 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
-from torchvision import transforms
 from torchvision.transforms import InterpolationMode
 from audio_to_multiple_pose_gan.torch_layers import ConvNormRelu, UpSampling1D, ResidualConnectUpSampling1D
+
+from einops import rearrange
+import torchaudio
+def torch_mel_spectograms(X_audio):
+    if not isinstance(X_audio, torch.Tensor):
+        X_audio = torch.tensor(X_audio)
+    n_fft = 512
+    win_length = 400
+    hop_length = 160
+    stft = torch.stft(X_audio, window=torch.hann_window(window_length=win_length), win_length = win_length, n_fft=n_fft, return_complex=True, hop_length=hop_length, center=False)
+    stft = torch.abs(stft)
+    stft = rearrange(stft, "a b c->a c b")
+    sr = 16000
+    mel_spect_input = torchaudio.functional.melscale_fbanks(n_freqs=stft.size(2), n_mels=64, f_min=125., f_max=7500., sample_rate=sr)
+    input_data = stft @ mel_spect_input
+    input_data = torch.log(input_data + 1e-6)
+    return input_data
 
 class Audio2Pose(nn.Module):
     def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, pose_size = 64):
@@ -67,7 +83,7 @@ class Audio2Pose(nn.Module):
 
     def forward(self, input_dict,):
         x_audio = input_dict['audio']
-        input_data = mel_spectograms(x_audio) #必ず何かしらを書く
+        input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
         input_data = self.downsampling_block2(input_data)
         input_data = self.downsampling_block3(input_data)
@@ -133,7 +149,7 @@ class Audio2PoseGANS(nn.Module):
 
     def forward(self, input_dict,):
         x_audio = input_dict['audio']
-        input_data = mel_spectograms(x_audio) #必ず何かしらを書く
+        input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
         input_data = self.downsampling_block2(input_data)
         input_data = self.downsampling_block3(input_data)
