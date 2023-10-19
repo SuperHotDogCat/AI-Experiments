@@ -4,11 +4,41 @@ import torch.nn.functional as F
 """
 https://github.com/amirbar/speech2gestureのaudio_to_multiple_pose_ganのtorch版を書く
 """
-
 """
 元リポジトリは全て関数で実装するTensorflow関数API型の実装を行なっていたが、今回はPytorchのため、
 Pytorchらしくclassでの実装を行う
 """
+def to_motion_delta(pose_batch):
+    """
+    poseを変換する関数 <-おそらく動きの差分に
+    """
+    shape = pose_batch.shape
+    reshaped = pose_batch.reshape(-1, 64, 2, shape[-1]/2)
+    diff = reshaped[:,1:] - reshaped[:,:-1] #動きの差分
+    return diff.reshape(-1, 63, shape[-1])
+
+def keypoints_to_train(poses, arr):
+    shape = poses.shape
+    reshaped = poses.reshape(shape[0], shape[1], 2, 49)
+    required_keypoints = torch.gather(reshaped, dim = 3, index = arr)
+    return required_keypoints.reshape(shape[0], shape[1], 2*len(arr))
+
+def keypoints_regloss(gt_keypoints, pred_keypoints, regloss_type):
+    """
+    損失関数を定義する
+    gt_keypoints: ground truth
+    pred_keypoints
+    """
+    residual = torch.flatten(gt_keypoints) - torch.flatten(pred_keypoints)
+    if regloss_type == "l1":
+        return torch.abs(residual).mean()
+    elif regloss_type == "l2":
+        return torch.pow(residual, 2).mean()
+    else:
+        raise ValueError("Wrong regression loss")
+
+
+
 class Norm(nn.Module):
     def __init__(self, channels, norm='batch', type='1d', G = None):
         super().__init__()
@@ -76,7 +106,7 @@ def UpSampling1D(input):
     return input.repeat(*repeats)
 
 def ResidualConnectUpSampling1D(nn.Module):
-    def __init__(self, in_channels, out_channels, type='1d', leaky=False, downsample=False, norm='batch', k=None,\
+    def __init__(self, in_channels, out_channels, type='1d', leaky=False, downsample=False, norm='batch', k=None, \
                  s=None, padding='same', G = None):
         super().__init__()
         self.convnormrelu = ConvNormRelu(in_channels, out_channels, type=type, leaky=leaky, downsample=downsample, norm=norm, k=k, s=s, padding=padding, G=G)
