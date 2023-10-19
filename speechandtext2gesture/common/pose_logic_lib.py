@@ -15,11 +15,14 @@ def preprocess_to_relative(k, reshape=True, num_keypoints=49):
 
 
 def preprocess_to_relative_tensor(k, reshape=True, num_keypoints=21):
-    import tensorflow as tf
-    reshaped = tf.reshape(k, (-1, k.shape[1], 2, num_keypoints))
+    """
+    ここのコードはPytorch用に書きかえました
+    """
+    shape = k.shape
+    reshaped = k.reshape(-1, shape[1], 2, num_keypoints)
     relative = reshaped - reshaped[:, :, :, 0:1]
     if reshape:
-        return tf.reshape(relative, (-1, k.shape[1], num_keypoints * 2))
+        return relative.reshape(-1, shape[1], num_keypoints*2)
     return relative
 
 
