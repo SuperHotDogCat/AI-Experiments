@@ -18,6 +18,9 @@ def to_motion_delta(pose_batch):
     return diff.reshape(-1, 63, shape[-1])
 
 def keypoints_to_train(poses, arr):
+    """
+    arrにはmodel.pyで実装された_get_training_keypointsのリストが入る
+    """
     shape = poses.shape
     reshaped = poses.reshape(shape[0], shape[1], 2, 49)
     required_keypoints = torch.gather(reshaped, dim = 3, index = arr)
