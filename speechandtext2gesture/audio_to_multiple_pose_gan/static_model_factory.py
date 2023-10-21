@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torchvision import transforms
 from torchvision.transforms import InterpolationMode
-from audio_to_multiple_pose_gan.torch_layers import ConvNormRelu, UpSampling1D, ResidualConnectUpSampling1D
+from audio_to_multiple_pose_gan.torch_layers import ConvNormRelu, UpSampling1D, UNet1D, UNet1DGAN
 
 from einops import rearrange
 import torchaudio
@@ -81,25 +81,8 @@ class Audio2Pose(nn.Module):
         """
         self.resize = transforms.Resize((pose_size,1), InterpolationMode.BILINEAR)
 
-        self.downsampling_block5 = nn.Sequential(
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            nn.MaxPool1d(kernel_size = 2, stride= 2),
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            nn.MaxPool1d(kernel_size = 2, stride= 2),
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            nn.MaxPool1d(kernel_size = 2, stride= 2),
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            nn.MaxPool1d(kernel_size = 2, stride= 2),
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            nn.MaxPool1d(kernel_size = 2, stride= 2),
-            ConvNormRelu(in_channels=256, out_channels=256, ),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256),
-        )
+        #ここが違う
+        self.downsampling_block5 = UNet1D(in_channels=256, out_channels=256)
 
         self.decoder = nn.Sequential(
             ConvNormRelu(in_channels=256, out_channels=256, ),
@@ -119,15 +102,18 @@ class Audio2Pose(nn.Module):
         input_data = self.downsampling_block4(input_data)
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
+        print(input_data.shape)
         input_data = self.downsampling_block5(input_data)
+        
         input_data = self.decoder(input_data)
         input_data = self.logits(input_data)
-
+        input_data = rearrange(input_data, "b s o->b o s")
         return input_data
     
 class Audio2PoseGANS(nn.Module):
     def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, norm = 'batch', pose_size = 64):
         super().__init__()
+        #paddingがpytorchだと保護されていないようなので治すこと
         self.downsampling_block1 = nn.Sequential(
             ConvNormRelu(in_channels=in_channels, out_channels=64, type='2d', norm=norm, leaky=True, downsample=False),
             ConvNormRelu(in_channels=64, out_channels=64, type='2d', norm=norm, leaky=True, downsample=True),
@@ -152,20 +138,7 @@ class Audio2PoseGANS(nn.Module):
         """
         self.resize = transforms.Resize((pose_size,1), InterpolationMode.BILINEAR)
 
-        self.downsampling_block5 = nn.Sequential(
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=True, norm=norm),
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=True, norm=norm),
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=True, norm=norm),
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=True, norm=norm),
-            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=True, norm=norm),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256,leaky=True, downsample=False, norm=norm),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256,leaky=True, downsample=False, norm=norm),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256,leaky=True, downsample=False, norm=norm),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256,leaky=True, downsample=False, norm=norm),
-            ResidualConnectUpSampling1D(in_channels = 256, out_channels = 256,leaky=True, downsample=False, norm=norm),
-        )
+        self.downsampling_block5 = UNet1DGAN(in_channels=256, out_channels=256, leaky=True, norm=norm)
 
         self.decoder = nn.Sequential(
             ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),

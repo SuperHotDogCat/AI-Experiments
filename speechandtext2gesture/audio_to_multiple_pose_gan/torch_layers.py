@@ -108,12 +108,80 @@ def UpSampling1D(input):
     repeats[2] = 2 # dim = 2のところを2回繰り返す
     return input.repeat(*repeats)
 
-class ResidualConnectUpSampling1D(nn.Module):
-    def __init__(self, in_channels, out_channels, type='1d', leaky=False, downsample=False, norm='batch', k=None, \
+class UNet1D(nn.Module):
+    def __init__(self, in_channels, out_channels, leaky=False, norm='batch', k=None, \
                  s=None, padding='same', G = None):
         super().__init__()
-        self.convnormrelu = ConvNormRelu(in_channels, out_channels, type=type, leaky=leaky, downsample=downsample, norm=norm, k=k, s=s, padding=padding, G=G)
-    def forward(self, input_data):
-        input_data = UpSampling1D(input_data) + input_data
-        input_data = self.convnormrelu(input_data)
-        return input_data
+        self.convnormrelus = nn.ModuleList([ConvNormRelu(in_channels, out_channels, type="1d", leaky=leaky,downsample=False, norm=norm, k=k, s=s, padding=padding, G=G) for _ in range(12)])
+        self.maxpool1ds = nn.ModuleList([nn.MaxPool1d(2,2) for _ in range(5)])
+    def forward(self, x):
+        x1 = self.convnormrelus[0](x)
+        x1 = self.convnormrelus[1](x1)
+
+        x2 = self.maxpool1ds[0](x1)
+        x2 = self.convnormrelus[2](x2)
+
+        x3 = self.maxpool1ds[1](x2)
+        x3 = self.convnormrelus[3](x3)
+
+        x4 = self.maxpool1ds[2](x3)
+        x4 = self.convnormrelus[4](x4)
+
+        x5 = self.maxpool1ds[3](x4)
+        x5 = self.convnormrelus[5](x5)
+
+        x6 = self.maxpool1ds[4](x5)
+        x6 = self.convnormrelus[6](x6)
+
+        x5 = UpSampling1D(x6) + x5
+        x5 = self.convnormrelus[7](x5)
+
+        x4 = UpSampling1D(x5) + x4
+        x4 = self.convnormrelus[8](x4)
+
+        x3 = UpSampling1D(x4) + x3
+        x3 =self.convnormrelus[9](x3)
+
+        x2 = UpSampling1D(x3) + x2
+        x2 = self.convnormrelus[10](x2)
+
+        x1 = UpSampling1D(x2) + x1
+        x1 = self.convnormrelus[11](x1)
+        return x1
+
+class UNet1DGAN(nn.Module):
+    def __init__(self, in_channels, out_channels, leaky=False, norm='batch', k=None, \
+                 s=None, padding='same', G = None):
+        super().__init__()
+        self.convnormrelus_downsamples = nn.ModuleList([ConvNormRelu(in_channels, out_channels, type="1d", leaky=leaky,downsample=True, norm=norm, k=k, s=s, padding=padding, G=G) for _ in range(5)])
+        self.convnormrelus_nondownsamples = nn.ModuleList([ConvNormRelu(in_channels, out_channels, type="1d", leaky=leaky,downsample=False, norm=norm, k=k, s=s, padding=padding, G=G) for _ in range(7)])
+    
+    def forward(self, x):
+        x1 = self.convnormrelus_nondownsamples[0](x)
+        x1 = self.convnormrelus_nondownsamples[1](x1)
+
+        x2 = self.convnormrelus_downsamples[0](x2)
+
+        x3 = self.convnormrelus_downsamples[1](x3)
+
+        x4 = self.convnormrelus_downsamples[2](x4)
+
+        x5 = self.convnormrelus_downsamples[3](x5)
+
+        x6 = self.convnormrelus_downsamples[4](x6)
+
+        x5 = UpSampling1D(x6) + x5
+        x5 = self.convnormrelus_nondownsamples[2](x5)
+
+        x4 = UpSampling1D(x5) + x4
+        x4 = self.convnormrelus_nondownsamples[3](x4)
+
+        x3 = UpSampling1D(x4) + x3
+        x3 =self.convnormrelus_nondownsamples[4](x3)
+
+        x2 = UpSampling1D(x3) + x2
+        x2 = self.convnormrelus_nondownsamples[5](x2)
+
+        x1 = UpSampling1D(x2) + x1
+        x1 = self.convnormrelus_nondownsamples[6](x1)
+        return x1
