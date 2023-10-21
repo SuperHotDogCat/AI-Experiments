@@ -105,7 +105,7 @@ class ConvNormRelu(nn.Module):
 
 def UpSampling1D(input):
     repeats = [1 for _ in range(len(input.shape))] #(1,1,1,1,....)
-    repeats[1] = 2 # dim = 1のところを2回繰り返す
+    repeats[2] = 2 # dim = 2のところを2回繰り返す
     return input.repeat(*repeats)
 
 class ResidualConnectUpSampling1D(nn.Module):
