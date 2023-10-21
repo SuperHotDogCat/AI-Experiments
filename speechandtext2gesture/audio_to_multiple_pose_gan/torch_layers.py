@@ -108,7 +108,7 @@ def UpSampling1D(input):
     repeats[1] = 2 # dim = 1のところを2回繰り返す
     return input.repeat(*repeats)
 
-def ResidualConnectUpSampling1D(nn.Module):
+class ResidualConnectUpSampling1D(nn.Module):
     def __init__(self, in_channels, out_channels, type='1d', leaky=False, downsample=False, norm='batch', k=None, \
                  s=None, padding='same', G = None):
         super().__init__()

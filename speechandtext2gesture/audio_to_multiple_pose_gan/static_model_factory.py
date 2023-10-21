@@ -20,6 +20,8 @@ def torch_mel_spectograms(X_audio):
     mel_spect_input = torchaudio.functional.melscale_fbanks(n_freqs=stft.size(2), n_mels=64, f_min=125., f_max=7500., sample_rate=sr)
     input_data = stft @ mel_spect_input
     input_data = torch.log(input_data + 1e-6)
+    input_data = input_data.unsqueeze(-1)
+    input_data = rearrange(input_data, "b h w c->b c h w")
     return input_data
 """
 input_dataはTensorflow準拠で作ったため、場合によってはTensorの形状を変更するべきなことに注意

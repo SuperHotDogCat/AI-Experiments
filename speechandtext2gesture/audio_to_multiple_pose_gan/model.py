@@ -19,8 +19,16 @@ class PoseGAN(nn.Module):
 
         """
         
-    def forward(self, ):
-    
+    def forward(self, audio, real_pose):
+        """
+        audio: shape = (batch, 67267) 予定
+        real_pose: shape = (batch, 64, 98) 予定
+
+        real_poseはkey_points_to_train関数で処理されて
+        training_real_poseとtraining_real_pose_motionという正解ラベルになる。
+
+        audioはaudio2poseでmel_spectogram関数に通してから処理しているのでこのままでもよい
+        """
     def train(self, ):
 
     def _get_training_keypoints(self):
