@@ -153,22 +153,22 @@ class UNet1DGAN(nn.Module):
     def __init__(self, in_channels, out_channels, leaky=False, norm='batch', k=None, \
                  s=None, padding='same', G = None):
         super().__init__()
-        self.convnormrelus_downsamples = nn.ModuleList([ConvNormRelu(in_channels, out_channels, type="1d", leaky=leaky,downsample=True, norm=norm, k=k, s=s, padding=padding, G=G) for _ in range(5)])
+        self.convnormrelus_downsamples = nn.ModuleList([ConvNormRelu(in_channels, out_channels, type="1d", leaky=leaky,downsample=True, norm=norm, k=k, s=s, padding=1, G=G) for _ in range(5)])
         self.convnormrelus_nondownsamples = nn.ModuleList([ConvNormRelu(in_channels, out_channels, type="1d", leaky=leaky,downsample=False, norm=norm, k=k, s=s, padding=padding, G=G) for _ in range(7)])
     
     def forward(self, x):
         x1 = self.convnormrelus_nondownsamples[0](x)
         x1 = self.convnormrelus_nondownsamples[1](x1)
 
-        x2 = self.convnormrelus_downsamples[0](x2)
+        x2 = self.convnormrelus_downsamples[0](x1)
 
-        x3 = self.convnormrelus_downsamples[1](x3)
+        x3 = self.convnormrelus_downsamples[1](x2)
 
-        x4 = self.convnormrelus_downsamples[2](x4)
+        x4 = self.convnormrelus_downsamples[2](x3)
 
-        x5 = self.convnormrelus_downsamples[3](x5)
+        x5 = self.convnormrelus_downsamples[3](x4)
 
-        x6 = self.convnormrelus_downsamples[4](x6)
+        x6 = self.convnormrelus_downsamples[4](x5)
 
         x5 = UpSampling1D(x6) + x5
         x5 = self.convnormrelus_nondownsamples[2](x5)

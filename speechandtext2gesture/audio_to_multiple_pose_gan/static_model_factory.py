@@ -97,9 +97,13 @@ class Audio2Pose(nn.Module):
         x_audio = input_dict['audio']
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
+        print(input_data.shape)
         input_data = self.downsampling_block2(input_data)
+        print(input_data.shape)
         input_data = self.downsampling_block3(input_data)
+        print(input_data.shape)
         input_data = self.downsampling_block4(input_data)
+        print(input_data.shape)
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
         print(input_data.shape)
@@ -116,15 +120,15 @@ class Audio2PoseGANS(nn.Module):
         #paddingがpytorchだと保護されていないようなので治すこと
         self.downsampling_block1 = nn.Sequential(
             ConvNormRelu(in_channels=in_channels, out_channels=64, type='2d', norm=norm, leaky=True, downsample=False),
-            ConvNormRelu(in_channels=64, out_channels=64, type='2d', norm=norm, leaky=True, downsample=True),
+            ConvNormRelu(in_channels=64, out_channels=64, type='2d', norm=norm, leaky=True, downsample=True, padding=1),
         )
         self.downsampling_block2 = nn.Sequential(
             ConvNormRelu(in_channels=64, out_channels=128, type='2d', norm=norm, leaky=True, downsample=False),
-            ConvNormRelu(in_channels=128, out_channels=128, type='2d', norm=norm, leaky=True, downsample=True),
+            ConvNormRelu(in_channels=128, out_channels=128, type='2d', norm=norm, leaky=True, downsample=True, padding=1),
         )
         self.downsampling_block3 = nn.Sequential(
             ConvNormRelu(in_channels=128, out_channels=256, type='2d', norm=norm, leaky=True, downsample=False),
-            ConvNormRelu(in_channels=256, out_channels=256, type='2d', norm=norm, leaky=True, downsample=True),
+            ConvNormRelu(in_channels=256, out_channels=256, type='2d', norm=norm, leaky=True, downsample=True, padding=1),
         )
         self.downsampling_block4 = nn.Sequential(
             ConvNormRelu(in_channels=256, out_channels=256, type='2d', norm=norm, leaky=True, downsample=False),
@@ -153,13 +157,18 @@ class Audio2PoseGANS(nn.Module):
         x_audio = input_dict['audio']
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
+        print(input_data.shape)
         input_data = self.downsampling_block2(input_data)
+        print(input_data.shape)
         input_data = self.downsampling_block3(input_data)
+        print(input_data.shape)
         input_data = self.downsampling_block4(input_data)
+        print(input_data.shape)
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
+        print(input_data.shape)
         input_data = self.downsampling_block5(input_data)
         input_data = self.decoder(input_data)
         input_data = self.logits(input_data)
-        
+        input_data = rearrange(input_data, "b s o->b o s")
         return input_data
