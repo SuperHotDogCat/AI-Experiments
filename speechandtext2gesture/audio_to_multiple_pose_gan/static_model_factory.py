@@ -29,23 +29,28 @@ input_dataはTensorflow準拠で作ったため、場合によってはTensorの
 """
 class D_patchgan(nn.Module):
     def __init__(self, in_channels, n_downsampling=2, norm='batch', reuse=False, is_training=False,):
+        super().__init__()
         ndf = 64
-        self.conv1d = nn.Conv1d(in_channels, out_channels=ndf, kernel_size=4, stride=2, padding="same")
+        self.conv1d = nn.Conv1d(in_channels, out_channels=ndf, kernel_size=4, stride=2, padding=1)
         self.leaky_relu = nn.LeakyReLU(0.2)
         modulelist = nn.ModuleList([])
         for n in range(1, n_downsampling):
             nf_mult = min(2**n, 8)
             if n == 1:
-                modulelist.append(ConvNormRelu(ndf, ndf * nf_mult, type = "1d", downsample=True, norm=norm, leaky=True))
+                modulelist.append(ConvNormRelu(ndf, ndf * nf_mult, type = "1d", downsample=True, norm=norm, leaky=True, padding=1))
                 prev_channels = ndf * nf_mult
             else:
-                modulelist.append(ConvNormRelu(prev_channels, ndf * nf_mult, type = "1d", downsample=True, norm=norm, leaky=True))
+                modulelist.append(ConvNormRelu(prev_channels, ndf * nf_mult, type = "1d", downsample=True, norm=norm, leaky=True, padding = 1))
                 prev_channels = ndf * nf_mult
         nf_mult = min(2**n_downsampling, 8)
         modulelist.append(ConvNormRelu(prev_channels, ndf * nf_mult, type = "1d", norm=norm, leaky=True, k=4, s=1))
         modulelist.append(nn.Conv1d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding="same"))
         self.convnormrelu = nn.Sequential(*modulelist)
     def forward(self, input_data):
+        #このD_patchganはDiscriminator関数である。
+        #入力は(batch, time, features)で問題なさそう。特にposeを変える必要はなし
+        if not isinstance(input_data, torch.Tensor):
+            input_data = torch.tensor(input_data).float()
         input_data = self.conv1d(input_data)
         input_data = self.leaky_relu(input_data)
         input_data = self.convnormrelu(input_data)
@@ -97,16 +102,11 @@ class Audio2Pose(nn.Module):
         x_audio = input_dict['audio']
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
-        print(input_data.shape)
         input_data = self.downsampling_block2(input_data)
-        print(input_data.shape)
         input_data = self.downsampling_block3(input_data)
-        print(input_data.shape)
         input_data = self.downsampling_block4(input_data)
-        print(input_data.shape)
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
-        print(input_data.shape)
         input_data = self.downsampling_block5(input_data)
         
         input_data = self.decoder(input_data)
@@ -157,16 +157,11 @@ class Audio2PoseGANS(nn.Module):
         x_audio = input_dict['audio']
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
-        print(input_data.shape)
         input_data = self.downsampling_block2(input_data)
-        print(input_data.shape)
         input_data = self.downsampling_block3(input_data)
-        print(input_data.shape)
         input_data = self.downsampling_block4(input_data)
-        print(input_data.shape)
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
-        print(input_data.shape)
         input_data = self.downsampling_block5(input_data)
         input_data = self.decoder(input_data)
         input_data = self.logits(input_data)

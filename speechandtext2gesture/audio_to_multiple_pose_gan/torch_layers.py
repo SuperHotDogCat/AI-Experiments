@@ -13,7 +13,7 @@ def to_motion_delta(pose_batch):
     poseを変換する関数 <-おそらく動きの差分に
     """
     shape = pose_batch.shape
-    reshaped = pose_batch.reshape(-1, 64, 2, shape[-1]/2)
+    reshaped = pose_batch.reshape(-1, 64, 2, shape[-1]//2)
     diff = reshaped[:,1:] - reshaped[:,:-1] #動きの差分
     return diff.reshape(-1, 63, shape[-1])
 
