@@ -18,7 +18,6 @@ class PoseGAN(nn.Module):
         pose shape: (batch_size, seq_len, 98)
 
         """
-        
     def forward(self, audio, real_pose):
         """
         audio: shape = (batch, 67267) 予定
@@ -31,7 +30,7 @@ class PoseGAN(nn.Module):
         """
     def train(self, ):
 
-    def _get_training_keypoints(self):
+    def get_training_keypoints(self):
         training_keypoints = []
         training_keypoints.extend(RIGHT_BODY_KEYPOINTS)
         training_keypoints.extend(LEFT_BODY_KEYPOINTS)
