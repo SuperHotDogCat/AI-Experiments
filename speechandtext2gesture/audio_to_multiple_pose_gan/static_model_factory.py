@@ -7,17 +7,19 @@ from audio_to_multiple_pose_gan.torch_layers import ConvNormRelu, UpSampling1D, 
 
 from einops import rearrange
 import torchaudio
+
+device = "cuda" if torch.cuda.is_available() else "cpu"
 def torch_mel_spectograms(X_audio):
     if not isinstance(X_audio, torch.Tensor):
         X_audio = torch.tensor(X_audio)
     n_fft = 512
     win_length = 400
     hop_length = 160
-    stft = torch.stft(X_audio, window=torch.hann_window(window_length=win_length), win_length = win_length, n_fft=n_fft, return_complex=True, hop_length=hop_length, center=False)
+    stft = torch.stft(X_audio, window=torch.hann_window(window_length=win_length).to(device), win_length = win_length, n_fft=n_fft, return_complex=True, hop_length=hop_length, center=False).to(device)
     stft = torch.abs(stft)
     stft = rearrange(stft, "a b c->a c b")
     sr = 16000
-    mel_spect_input = torchaudio.functional.melscale_fbanks(n_freqs=stft.size(2), n_mels=64, f_min=125., f_max=7500., sample_rate=sr)
+    mel_spect_input = torchaudio.functional.melscale_fbanks(n_freqs=stft.size(2), n_mels=64, f_min=125., f_max=7500., sample_rate=sr).to(device)
     input_data = stft @ mel_spect_input
     input_data = torch.log(input_data + 1e-6)
     input_data = input_data.unsqueeze(-1)
@@ -46,6 +48,9 @@ class D_patchgan(nn.Module):
         modulelist.append(ConvNormRelu(prev_channels, ndf * nf_mult, type = "1d", norm=norm, leaky=True, k=4, s=1))
         modulelist.append(nn.Conv1d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding="same"))
         self.convnormrelu = nn.Sequential(*modulelist)
+        #元コードに流石に無理があった気がしたのでsigmoidを追加する
+        self.linear = nn.Linear(24,1) #ハードコーディング
+        self.sigmoid = nn.Sigmoid()
     def forward(self, input_data):
         #このD_patchganはDiscriminator関数である。
         #入力は(batch, time, features)で問題なさそう。特にposeを変える必要はなし
@@ -54,7 +59,10 @@ class D_patchgan(nn.Module):
         input_data = self.conv1d(input_data)
         input_data = self.leaky_relu(input_data)
         input_data = self.convnormrelu(input_data)
-        return input_data
+        input_data = rearrange(input_data, "b l f->b (l f)")
+        input_data = self.linear(input_data)
+        input_data = self.sigmoid(input_data)
+        return input_data #真のデータかいなかを判別する確率になっている
 
 class Audio2Pose(nn.Module):
     def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, pose_size = 64):
@@ -98,8 +106,8 @@ class Audio2Pose(nn.Module):
 
         self.logits = nn.Conv1d(in_channels=256, out_channels=out_channels, kernel_size=1, stride=1, padding="same")
 
-    def forward(self, input_dict,):
-        x_audio = input_dict['audio']
+    def forward(self, x_audio,):
+        #x_audio = input_dict['audio']
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
         input_data = self.downsampling_block2(input_data)
@@ -153,8 +161,8 @@ class Audio2PoseGANS(nn.Module):
 
         self.logits = nn.Conv1d(in_channels=256, out_channels=out_channels, kernel_size=1, stride=1, padding="same")
 
-    def forward(self, input_dict,):
-        x_audio = input_dict['audio']
+    def forward(self, x_audio,):
+        #x_audio = input_dict['audio']
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
         input_data = self.downsampling_block2(input_data)
