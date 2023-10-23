@@ -83,7 +83,9 @@ if __name__ == "__main__":
     device = "cuda" if torch.cuda.is_available() else "cpu"
     G_model = Audio2PoseGANS(1, POSE_SAMPLE_SHAPE[-1]).to(device) #つまりPOSESAMPLESHAPE[-1] = 98
     D_model = D_patchgan(in_channels=FRAMES_PER_SAMPLE+FRAMES_PER_SAMPLE-1).to(device) #つまりFRAMESPERSAMPLE=64でto_motion_deltaを組み合わせた動きとする
-
+    G_model = torch.compile(G_model)
+    D_model = torch.compile(D_model)
+    
     optimizer_g = optim.Adam(G_model.parameters(), lr = 1e-4) #初期値にしたがってlr = 1e-4としている。
     optimizer_d = optim.Adam(D_model.parameters(), lr = 1e-4)
     print("EPOCHS: ", args.epochs)
@@ -107,8 +109,10 @@ if __name__ == "__main__":
         epochs[epoch] = epoch + 1
         if (epoch+1) % 100 == 0:
             print(f"epoch: {epoch + 1}, G_loss: {G_loss}, D_loss: {D_loss}")
-    torch.save(G_model.state_dict(), "G_model.pth")
-    torch.save(D_model.state_dict(), "D_model.pth")
+        if (epoch+1) % 1000 == 0:
+            torch.save(G_model.state_dict(), f"G_model_{epoch+1}.pth")
+    torch.save(G_model.state_dict(), "G_model_last.pth")
+    torch.save(D_model.state_dict(), "D_model_last.pth")
     plt.plot(epochs, G_losses)
     plt.plot(epochs, D_losses)
     plt.legend(["Generator Loss", "Discriminator Loss"])
