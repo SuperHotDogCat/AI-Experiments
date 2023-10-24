@@ -112,7 +112,7 @@ if __name__ == "__main__":
         epochs[epoch] = epoch + 1
         if (epoch+1) % 100 == 0:
             print(f"epoch: {epoch + 1}, G_loss: {G_loss}, D_loss: {D_loss}")
-        if (epoch+1) % 10000 == 0:
+        if (epoch+1) % 1000 == 0:
             torch.save(G_model.state_dict(), f"params/G_transformermodel_{epoch+1}.pth")
     torch.save(G_model.state_dict(), "params/G_transformermodel_last.pth")
     torch.save(D_model.state_dict(), "params/D_transformermodel_last.pth")

@@ -169,7 +169,6 @@ class Audio2PoseGANS(nn.Module):
         input_data = self.downsampling_block4(input_data)
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
-        print(input_data.shape)
         input_data = self.downsampling_block5(input_data)
         input_data = self.decoder(input_data)
         input_data = self.logits(input_data)

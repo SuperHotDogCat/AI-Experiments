@@ -1,6 +1,6 @@
 import matplotlib
 from common.pose_logic_lib import translate_keypoints
-from common.pose_plot_lib import save_side_by_side_video
+from common.pose_plot_lib import save_video
 matplotlib.use('Agg')
 import os
 import argparse
@@ -65,7 +65,7 @@ def post_process(res, y, shift_gt, shift_pred, decode_pose, row):
 def post_process_output(res, decode_pose, shift, speaker):
     return decode_pose(res, shift, speaker) #decode_pose(pose_Y, shift = [0,0], speaker="shelly").shape = (64, 2, 49) Y.shape (64, 98)が(64, 2, 49)に変換された。
 @torch.no_grad
-def save_prediction_video(df, keypoints_pred, keypoints_gt, output_path, limit = None):
+def save_prediction_video(df, keypoints_pred, output_path, limit = None):
     #videoをsaveする関数を組む
     if limit == None:
         limit = len(df)
@@ -73,13 +73,12 @@ def save_prediction_video(df, keypoints_pred, keypoints_gt, output_path, limit =
         try:
             row = df.iloc[i]
             keypoints1 = keypoints_pred[i]
-            keypoints2 = keypoints_gt[i]
             dir_name = os.path.join(output_path, "pred_videos")
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
             interval_id = row["interval_id"]
             output_fn = os.path.join(dir_name, f"{interval_id}.mp4")
-            save_side_by_side_video(dir_name, keypoints1, keypoints2, output_fn, delete_tmp=False)
+            save_video(dir_name, keypoints1, output_fn, delete_tmp=False)
         except Exception as e:
                 logger.exception(e)
 
@@ -96,7 +95,6 @@ if __name__ == "__main__":
     del G_model
     gc.collect()
     torch.cuda.empty_cache()
-    keypoints1_list = translate_keypoints(keypoints1_list, [900, 290])
-    keypoints2_list = translate_keypoints(keypoints2_list, [1900, 280])
+    keypoints1_list = translate_keypoints(keypoints1_list, [1500, 500])
     limit = len(keypoints1_list)
-    save_prediction_video(df, keypoints1_list, keypoints2_list, args.output_path, limit = limit)
+    save_prediction_video(df, keypoints1_list, args.output_path, limit = limit)

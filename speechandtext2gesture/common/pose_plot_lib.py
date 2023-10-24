@@ -93,6 +93,53 @@ def draw_side_by_side_poses(img, keypoints1, keypoints2, output=None, show=True,
         plt.savefig(output)
     return fig
 
+"""
+単一key pointsの描画
+"""
+
+def save_video(temp_folder, keypoints1, output_fn, delete_tmp=True):
+    if not (os.path.exists(temp_folder)):
+        os.makedirs(temp_folder)
+
+    if not (os.path.exists(os.path.dirname(output_fn))):
+        os.makedirs(temp_folder)
+    output_fn_pattern = os.path.join(temp_folder, '%04d.jpg')
+    for j in range(len(keypoints1)):
+        draw_poses(None, keypoints1[j], output=output_fn_pattern % j, show=False)
+        plt.close()
+
+    create_mute_video_from_images(output_fn, temp_folder)
+    if delete_tmp:
+        subprocess.call('rm -R "%s"' % (temp_folder), shell=True)
+        
+def draw_poses(img, keypoints1, output=None, show=True,\
+                            title=f"Prediction", img_size=(3000, 1000)):
+    plt.close("all")
+    fig = plt.figure(figsize=(6, 4), dpi=400)
+    plt.axis('off')
+    if title:
+        plt.title(title)
+    if img != None:
+        img = Image.open(img)
+    else:
+        img = Image.new(mode='RGB', size=img_size, color='white')
+
+    plt.imshow(img, alpha=0.5)
+
+    for keypoints in [keypoints1]:
+        plot_body_right_keypoints(keypoints)
+        plot_body_left_keypoints(keypoints)
+        plot_left_hand_keypoints(keypoints)
+        plot_right_hand_keypoints(keypoints)
+
+    if show:
+        plt.show()
+    if output is not None:
+        plt.savefig(output)
+    return fig
+"""
+単一描画の終了
+"""
 
 def save_side_by_side_video(temp_folder, keypoints1, keypoints2, output_fn, delete_tmp=True):
     if not (os.path.exists(temp_folder)):
