@@ -10,7 +10,9 @@ model = TranslatorModel(dataset.english_word_size(),
                         dataset.japanese_word_size())
 
 model.load_state_dict(torch.load("trained_model/translator_10.model"))
-
+"""
+未知語対応のため一部書き換えた
+"""
 # 入力された文章を単語に分割する
 sentence = input("input an english sentence : ").split(' ')
 # 単語IDのリストに変換する
@@ -22,8 +24,11 @@ for word in sentence:
     word = word.lower()
     id = dataset.english_word_id(word)
     if id is None:
-        sys.stderr.write("Error : Unknown word " + word + "\n")
-        sys.exit()
+        id = torch.tensor(1,dtype=torch.long).unsqueeze(-1)
+        sentence_id.append(id)
+        #print(dataset.japanese_word(id)) <- しっかり<UNKNOWN>がでていることがわかる
+        #sys.stderr.write("Error : Unknown word " + word + "\n")
+        #sys.exit()
     else:
         id = torch.tensor(id,dtype=torch.long).unsqueeze(-1)
         sentence_id.append(id)
