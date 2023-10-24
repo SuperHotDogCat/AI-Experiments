@@ -25,7 +25,7 @@ def create_args():
     parser.add_argument('--dataset', '-d', type=str, default="~/Desktop/AI-Experiments/speechandtext2gesture/Gestures/train.csv", help="DATAPATH")
     parser.add_argument('--speaker', '-s', type=str, default="shelly")
     parser.add_argument('--output_path', '-op', type=str, default="pred_videos")
-    parser.add_argument('--param_path', '-p', type = str, default = "G_model.pth")
+    parser.add_argument('--param_path', '-p', type = str, default = "params/G_model_last.pth")
     args = parser.parse_args()
     return args
 @torch.no_grad
@@ -86,16 +86,17 @@ def save_prediction_video(df, keypoints_pred, keypoints_gt, output_path, limit =
 if __name__ == "__main__":
     args = create_args()
     G_model = Audio2PoseGANS(1, POSE_SAMPLE_SHAPE[-1]).to(device)
-    G_model.load_state_dict(torch.load(args.param_path))
     G_model = torch.compile(G_model)
+    G_model.load_state_dict(torch.load(args.param_path))
+    G_model.eval()
     data_csv: str = args.dataset
     df = pd.read_csv(data_csv)
     cfg: dict = {"processor": "audio_to_pose", "input_shape": [None, AUDIO_SHAPE]} #processorはaudio_to_pose_inferenceかもしれない
-    keypoints1_list, keypoints2_list = predict_df(G_model, df, cfg, [0,0], [0,0], limit = 10)
+    keypoints1_list, keypoints2_list = predict_df(G_model, df, cfg, [0,0], [0,0], limit = 1)
     del G_model
     gc.collect()
     torch.cuda.empty_cache()
     keypoints1_list = translate_keypoints(keypoints1_list, [900, 290])
     keypoints2_list = translate_keypoints(keypoints2_list, [1900, 280])
     limit = len(keypoints1_list)
-    save_prediction_video(df, keypoints2_list, keypoints1_list, args.output_path, limit = limit)
+    save_prediction_video(df, keypoints1_list, keypoints2_list, args.output_path, limit = limit)

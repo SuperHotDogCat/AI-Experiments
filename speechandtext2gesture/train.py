@@ -35,6 +35,7 @@ def make_args():
     parser.add_argument('--epochs', '-e', type=int, default=100, help='EPOCHS')
     parser.add_argument('--batch_size', '-b', type=int, default=32, help='BATCH_SIZE')
     parser.add_argument('--dataset_path', '-d', type=str, default="~/Desktop/AI-Experiments/speechandtext2gesture/Gestures/train.csv", help="DATAPATH")
+    parser.add_argument('--param_path', '-p', type = str, default = None)
     args = parser.parse_args()
     return args
 
@@ -85,6 +86,8 @@ if __name__ == "__main__":
     D_model = D_patchgan(in_channels=FRAMES_PER_SAMPLE+FRAMES_PER_SAMPLE-1).to(device) #つまりFRAMESPERSAMPLE=64でto_motion_deltaを組み合わせた動きとする
     G_model = torch.compile(G_model)
     D_model = torch.compile(D_model)
+    if args.param_path != None:
+        G_model.load_state_dict(torch.load(args.param_path))
 
     optimizer_g = optim.Adam(G_model.parameters(), lr = 1e-4) #初期値にしたがってlr = 1e-4としている。
     optimizer_d = optim.Adam(D_model.parameters(), lr = 1e-4)
@@ -109,7 +112,7 @@ if __name__ == "__main__":
         epochs[epoch] = epoch + 1
         if (epoch+1) % 100 == 0:
             print(f"epoch: {epoch + 1}, G_loss: {G_loss}, D_loss: {D_loss}")
-        if (epoch+1) % 1000 == 0:
+        if (epoch+1) % 10000 == 0:
             torch.save(G_model.state_dict(), f"params/G_model_{epoch+1}.pth")
     torch.save(G_model.state_dict(), "params/G_model_last.pth")
     torch.save(D_model.state_dict(), "params/D_model_last.pth")
