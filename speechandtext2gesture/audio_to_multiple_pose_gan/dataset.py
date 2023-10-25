@@ -3,7 +3,7 @@ from functools import partial
 import numpy as np
 #from keras.utils import GeneratorEnqueuer
 from common.pose_logic_lib import normalize_relative_keypoints, preprocess_to_relative, \
-    decode_pose_normalized_keypoints, get_pose, decode_pose_normalized_keypoints_no_scaling
+    decode_pose_normalized_keypoints, get_pose, decode_pose_normalized_keypoints_no_scaling, decode_pose_normalized_keypoints_new_keypoints
 import logging
 logging.basicConfig()
 from logging import getLogger
@@ -31,6 +31,8 @@ def get_processor(config):
         d = decode_pose_normalized_keypoints
     elif processing_type == 'audio_to_pose_inference':
         d = decode_pose_normalized_keypoints_no_scaling
+    elif processing_type == 'audio_to_pose_new_keypoints':
+        d = decode_pose_normalized_keypoints_new_keypoints
     else:
         raise ValueError("Wrong Processor")
     return partial(f, config), d
@@ -51,8 +53,12 @@ def audio_pose_mel_spect(config, row):
         arr = np.load(row['pose_fn'])
         x = arr["audio"]
     x = preprocess_x(x, config)
-    y = preprocess_to_relative(get_pose(arr))
-    y = normalize_relative_keypoints(y, row['speaker'])
+    if "new_keypoints" in config and config["new_keypoints"]:
+        y = preprocess_to_relative(get_pose(arr, remove_new_keypoints=False), num_keypoints=52)
+        #print("Warning: Keypoints data were not normalized.")
+    else:
+        y = preprocess_to_relative(get_pose(arr))
+        y = normalize_relative_keypoints(y, row['speaker'])
     if "flatten" in config and config["flatten"]:
         y = y.flatten()
     return x, y

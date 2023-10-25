@@ -17,6 +17,7 @@ def preprocess_to_relative(k, reshape=True, num_keypoints=49):
 def preprocess_to_relative_tensor(k, reshape=True, num_keypoints=21):
     """
     ここのコードはPytorch用に書きかえました
+    これnew keypoints delete前提かも
     """
     shape = k.shape
     reshaped = k.reshape(-1, shape[1], 2, num_keypoints)
@@ -45,6 +46,10 @@ def decode_pose_normalized_keypoints(encoded_keypoints, shift, speaker, scale_to
 def decode_pose_normalized_keypoints_no_scaling(encoded_keypoints, shift, speaker):
     return decode_pose_normalized_keypoints(encoded_keypoints, shift, speaker, scale_to_jon=False)
 
+def decode_pose_normalized_keypoints_new_keypoints(encoded_keypoints, shift, speaker):
+    encoded_keypoints = np.reshape(encoded_keypoints, (-1, 2, 52))
+    encoded_keypoints[:, :, 0] = 0.
+    return translate_keypoints(encoded_keypoints, shift)
 
 def translate_keypoints(keypoints, shift):
     return keypoints + np.reshape(shift, (1, 2, 1))

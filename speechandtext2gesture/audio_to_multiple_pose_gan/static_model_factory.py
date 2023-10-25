@@ -30,7 +30,7 @@ input_dataはTensorflow準拠で作ったため、場合によってはTensorの
 例: Tensorflow: (batch, height, width, channels), Pytorch: (batch, channels, height, width)
 """
 class D_patchgan(nn.Module):
-    def __init__(self, in_channels, n_downsampling=2, norm='batch', reuse=False, is_training=False,):
+    def __init__(self, in_channels, n_downsampling=2, norm='batch', reuse=False, is_training=False,linear_size = 24):
         super().__init__()
         ndf = 64
         self.conv1d = nn.Conv1d(in_channels, out_channels=ndf, kernel_size=4, stride=2, padding=1)
@@ -49,7 +49,7 @@ class D_patchgan(nn.Module):
         modulelist.append(nn.Conv1d(ndf * nf_mult, 1, kernel_size=4, stride=1, padding="same"))
         self.convnormrelu = nn.Sequential(*modulelist)
         #元コードに流石に無理があった気がしたのでsigmoidを追加する
-        self.linear = nn.Linear(24,1) #ハードコーディング
+        self.linear = nn.Linear(linear_size,1) #ハードコーディング, linear_size = 24はnewkeypointsなし, 
         self.sigmoid = nn.Sigmoid()
     def forward(self, input_data):
         #このD_patchganはDiscriminator関数である。
@@ -203,9 +203,9 @@ class Audio2PoseGANSTransformer(nn.Module):
         """
         self.resize = transforms.Resize((pose_size,1), InterpolationMode.BILINEAR)
 
-        encoderlayer = nn.TransformerEncoderLayer(64, nhead=1, dim_feedforward=64 * 2, activation="gelu",batch_first=True, bias=False)
+        encoderlayer = nn.TransformerEncoderLayer(64, nhead=4, dim_feedforward=64 * 4, activation="gelu",batch_first=True, bias=False)
 
-        self.transformerencoder = nn.TransformerEncoder(encoderlayer, num_layers=1,)
+        self.transformerencoder = nn.TransformerEncoder(encoderlayer, num_layers=2,)
 
         self.downsampling_block5 = UNet1DGAN(in_channels=256, out_channels=256, leaky=True, norm=norm)
 
