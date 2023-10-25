@@ -57,7 +57,7 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     fake_pose_Y_input = torch.concatenate([fake_pose_Y,to_motion_delta(fake_pose_Y)], dim =1)
     D_loss = 0
     D_loss += torch.pow( torch.ones(size=(pose_Y_input.size(0), 1)).to(device) - D_model(pose_Y_input),2 ).mean()
-    D_loss += 1e-4 * torch.pow(torch.zeros((fake_pose_Y_input.size(0), 1)).to(device) - D_model(fake_pose_Y_input), 2 ).mean()
+    D_loss += 1e-4 * torch.pow(torch.zeros((fake_pose_Y_input.size(0), 1)).to(device) - D_model(fake_pose_Y_input), 2 ).mean() #1e-4
     D_loss.backward()
     optimizer_d.step()
 
@@ -70,7 +70,7 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     fake_pose_Y_motion = to_motion_delta(fake_pose_Y)
     fake_pose_Y_input = torch.concatenate([fake_pose_Y,to_motion_delta(fake_pose_Y)], dim =1)
     g_gan_loss = torch.pow(torch.ones(size=(fake_pose_Y_input.size(0),1)).to(device) - D_model(fake_pose_Y_input), 2 ).mean()
-    G_loss = keypoints_regloss(pose_Y, fake_pose_Y, "l1") + keypoints_regloss(pose_Y_motion, fake_pose_Y_motion, "l1") + 1e-4 * g_gan_loss
+    G_loss = keypoints_regloss(pose_Y, fake_pose_Y, "l1") + keypoints_regloss(pose_Y_motion, fake_pose_Y_motion, "l1") + 1e-4 * g_gan_loss #1e-4
     G_loss.backward()
     optimizer_g.step()
 
@@ -119,5 +119,5 @@ if __name__ == "__main__":
     plt.plot(epochs, G_losses)
     plt.plot(epochs, D_losses)
     plt.legend(["Generator Loss", "Discriminator Loss"])
-    plt.savefig("TransformerLossGraph.png")
+    plt.savefig("NEWKEYPOINTSTransformerLossGraph.png")
     plt.show()
