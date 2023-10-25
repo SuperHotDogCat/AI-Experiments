@@ -233,3 +233,70 @@ class Audio2PoseGANSTransformer(nn.Module):
         input_data = self.logits(input_data)
         input_data = rearrange(input_data, "b s o->b o s")
         return input_data
+    
+class Audio2PoseGANS_STTransformer(nn.Module):
+    def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, norm = 'batch', pose_size = 64):
+        super().__init__()
+        #paddingがpytorchだと保護されていないようなので治すこと
+        self.downsampling_block1 = nn.Sequential(
+            ConvNormRelu(in_channels=in_channels, out_channels=64, type='2d', norm=norm, leaky=True, downsample=False),
+            ConvNormRelu(in_channels=64, out_channels=64, type='2d', norm=norm, leaky=True, downsample=True, padding=1),
+        )
+        self.downsampling_block2 = nn.Sequential(
+            ConvNormRelu(in_channels=64, out_channels=128, type='2d', norm=norm, leaky=True, downsample=False),
+            ConvNormRelu(in_channels=128, out_channels=128, type='2d', norm=norm, leaky=True, downsample=True, padding=1),
+        )
+        self.downsampling_block3 = nn.Sequential(
+            ConvNormRelu(in_channels=128, out_channels=256, type='2d', norm=norm, leaky=True, downsample=False),
+            ConvNormRelu(in_channels=256, out_channels=256, type='2d', norm=norm, leaky=True, downsample=True, padding=1),
+        )
+        self.downsampling_block4 = nn.Sequential(
+            ConvNormRelu(in_channels=256, out_channels=256, type='2d', norm=norm, leaky=True, downsample=False),
+            ConvNormRelu(in_channels=256, out_channels=256, type='2d', k = (3,8), s = 1, padding='valid', norm=norm, leaky=True, downsample=False),
+        )
+        #To do: downsampling_block4実装のためには元リポジトリのinput_dictを調査する必要がある
+        #input_dictを調査するまでこれ以上はかけない
+        """
+        pose_data: (batch_data, 64, 98)なので、64フレームであると考えられる。
+        downsampling_block4以後で(batch_size, channels, height, width)を(batch_size, channels, 64, 1)に変える。
+        """
+        self.resize = transforms.Resize((pose_size,1), InterpolationMode.BILINEAR)
+
+        encoderlayer = nn.TransformerEncoderLayer(64, nhead=4, dim_feedforward=64 * 4, activation="gelu",batch_first=True, bias=False)
+        self.transformerencoder = nn.TransformerEncoder(encoderlayer, num_layers=2,)
+
+        self.linear = nn.Linear(64, 104)
+
+        decoderlayer = nn.TransformerDecoderLayer(104, nhead=4, dim_feedforward=104 * 4, activation="gelu",batch_first=True, bias=False)
+        self.transformerdecoder = nn.TransformerDecoder(decoderlayer, num_layers=2,)
+
+    def forward(self, x_audio,Y_pose, device = device, mask = True):
+        #x_audio = input_dict['audio']
+        input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
+        input_data = self.downsampling_block1(input_data)
+        input_data = self.downsampling_block2(input_data)
+        input_data = self.downsampling_block3(input_data)
+        input_data = self.downsampling_block4(input_data)
+        input_data = self.resize(input_data)
+        input_data = torch.squeeze(input_data, dim = 3)
+        input_data = self.transformerencoder(input_data)
+        input_data = self.linear(input_data)
+        if mask:
+            mask = self.create_mask(Y_pose, device)
+            input_data = self.transformerdecoder(tgt = Y_pose, memory = input_data, tgt_is_causal = True, tgt_mask = mask)
+        else:
+            input_data = self.transformerdecoder(tgt = Y_pose, memory = input_data)
+        return input_data
+    
+    def create_mask(self, x: torch.tensor, device: str):
+        """
+        (batch_size, sequence_length, embedding_dim)の入力を想定
+        """
+        """
+        Trueが無視される値であることに注意すること
+        """
+        seq_len = x.size(1)
+        #srcのマスク制作
+        mask = torch.triu(torch.ones(size = (seq_len, seq_len))==1).transpose(0,1) #下三角行列を作る
+        mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask==1.,float(0.0)).to(device)
+        return mask
