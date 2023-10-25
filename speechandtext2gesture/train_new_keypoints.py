@@ -1,7 +1,7 @@
 from audio_to_multiple_pose_gan.config import get_config
 from audio_to_multiple_pose_gan.dataset import generate_batch, get_processor
 #get_modelの実装は任せる
-from audio_to_multiple_pose_gan.static_model_factory import Audio2PoseGANSTransformer, D_patchgan
+from audio_to_multiple_pose_gan.static_model_factory import Audio2PoseGANSTransformer, D_patchgan, Audio2PoseGANS_STTransformer
 from audio_to_multiple_pose_gan.torch_layers import to_motion_delta, keypoints_to_train, keypoints_regloss
 from common.audio_lib import save_audio_sample
 from common.audio_repr import raw_repr
@@ -51,10 +51,12 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     audio_X, pose_Y = generate_batch(df, process_row, batch_size)
     audio_X = torch.tensor(audio_X).float().to(device)
     pose_Y = torch.tensor(pose_Y).float().to(device)
-    fake_pose_Y = G_model(audio_X)
+    zero_Y = torch.zeros(size=(pose_Y.size(0), 1, pose_Y.size(2))).to(device)
+    pose_Y = torch.concatenate([zero_Y, pose_Y], dim = 1) #最初の時系列が0で埋め尽くされたposeができた
+    fake_pose_Y = G_model(audio_X, pose_Y)
     #事情によりkeypoints to trainはなしで
-    pose_Y_input = torch.concatenate([pose_Y,to_motion_delta(pose_Y)], dim =1)
-    fake_pose_Y_input = torch.concatenate([fake_pose_Y,to_motion_delta(fake_pose_Y)], dim =1)
+    pose_Y_input = torch.concatenate([pose_Y[:,1:,:],to_motion_delta(pose_Y[:,1:,:])], dim =1)
+    fake_pose_Y_input = torch.concatenate([fake_pose_Y[:,:-1,:],to_motion_delta(fake_pose_Y[:,:-1,:])], dim =1)
     D_loss = 0
     D_loss += torch.pow( torch.ones(size=(pose_Y_input.size(0), 1)).to(device) - D_model(pose_Y_input),2 ).mean()
     D_loss += 1e-4 * torch.pow(torch.zeros((fake_pose_Y_input.size(0), 1)).to(device) - D_model(fake_pose_Y_input), 2 ).mean() #1e-4
@@ -65,12 +67,14 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     audio_X, pose_Y = generate_batch(df, process_row, batch_size)
     audio_X = torch.tensor(audio_X).float().to(device)
     pose_Y = torch.tensor(pose_Y).float().to(device)
-    pose_Y_motion = to_motion_delta(pose_Y)
-    fake_pose_Y = G_model(audio_X)
-    fake_pose_Y_motion = to_motion_delta(fake_pose_Y)
-    fake_pose_Y_input = torch.concatenate([fake_pose_Y,to_motion_delta(fake_pose_Y)], dim =1)
+    zero_Y = torch.zeros(size=(pose_Y.size(0), 1, pose_Y.size(2))).to(device)
+    pose_Y = torch.concatenate([zero_Y, pose_Y], dim = 1)
+    pose_Y_motion = to_motion_delta(pose_Y[:,1:,:])
+    fake_pose_Y = G_model(audio_X, pose_Y)
+    fake_pose_Y_motion = to_motion_delta(fake_pose_Y[:,:-1,:])
+    fake_pose_Y_input = torch.concatenate([fake_pose_Y[:,:-1,:],to_motion_delta(fake_pose_Y[:,:-1,:])], dim =1)
     g_gan_loss = torch.pow(torch.ones(size=(fake_pose_Y_input.size(0),1)).to(device) - D_model(fake_pose_Y_input), 2 ).mean()
-    G_loss = keypoints_regloss(pose_Y, fake_pose_Y, "l1") + keypoints_regloss(pose_Y_motion, fake_pose_Y_motion, "l1") + 1e-4 * g_gan_loss #1e-4
+    G_loss = keypoints_regloss(pose_Y[:,1:,:], fake_pose_Y[:,:-1,:], "l1") + keypoints_regloss(pose_Y_motion, fake_pose_Y_motion, "l1") + 1e-4 * g_gan_loss #1e-4
     G_loss.backward()
     optimizer_g.step()
 
@@ -82,7 +86,7 @@ if __name__ == "__main__":
     model, optimizers定義
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    G_model = Audio2PoseGANSTransformer(1, POSE_SAMPLE_SHAPE[-1]+6).to(device) #つまりPOSESAMPLESHAPE[-1] = 98 　+6は顔とかの文
+    G_model = Audio2PoseGANS_STTransformer(1, POSE_SAMPLE_SHAPE[-1]+6).to(device) #つまりPOSESAMPLESHAPE[-1] = 98 　+6は顔とかの文
     D_model = D_patchgan(in_channels=FRAMES_PER_SAMPLE+FRAMES_PER_SAMPLE-1, linear_size=26).to(device) #つまりFRAMESPERSAMPLE=64でto_motion_deltaを組み合わせた動きとする
     G_model = torch.compile(G_model)
     D_model = torch.compile(D_model)

@@ -270,8 +270,13 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         decoderlayer = nn.TransformerDecoderLayer(104, nhead=4, dim_feedforward=104 * 4, activation="gelu",batch_first=True, bias=False)
         self.transformerdecoder = nn.TransformerDecoder(decoderlayer, num_layers=2,)
 
+        self.positioning_encoding_src = nn.Parameter(torch.zeros(1, 256, 104))
+        self.positioning_encoding_tgt = nn.Parameter(torch.zeros(1, 65, 104))
     def forward(self, x_audio,Y_pose, device = device, mask = True):
         #x_audio = input_dict['audio']
+        """
+        	位置エンコーディングが必要かもしれない
+        """
         input_data = torch_mel_spectograms(x_audio) #必ず何かしらを書く
         input_data = self.downsampling_block1(input_data)
         input_data = self.downsampling_block2(input_data)
@@ -281,14 +286,16 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         input_data = torch.squeeze(input_data, dim = 3)
         input_data = self.transformerencoder(input_data)
         input_data = self.linear(input_data)
+        input_data = input_data + self.positioning_encoding_src[:,:input_data.size(1),:]
         if mask:
             mask = self.create_mask(Y_pose, device)
+            Y_pose = Y_pose + self.positioning_encoding_tgt[:,:Y_pose.size(1),:]
             input_data = self.transformerdecoder(tgt = Y_pose, memory = input_data, tgt_is_causal = True, tgt_mask = mask)
         else:
             input_data = self.transformerdecoder(tgt = Y_pose, memory = input_data)
         return input_data
     
-    def create_mask(self, x: torch.tensor, device: str):
+    def create_mask(self, x: torch.tensor, device: str = device):
         """
         (batch_size, sequence_length, embedding_dim)の入力を想定
         """
@@ -300,3 +307,16 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         mask = torch.triu(torch.ones(size = (seq_len, seq_len))==1).transpose(0,1) #下三角行列を作る
         mask = mask.float().masked_fill(mask == 0, float("-inf")).masked_fill(mask==1.,float(0.0)).to(device)
         return mask
+    
+    @torch.no_grad
+    def predict(self, x_audio: torch.Tensor, pose_size = 104, seq_len = 64, device = device):
+        self.eval()
+        if len(x_audio.shape) != 2:
+            x_audio = x_audio.unsqueeze(0)
+        output = torch.zeros(size=(x_audio.size(0), 1, pose_size)).to(device)
+        for i in range(seq_len):
+            pred_pose = self(x_audio, output,)
+            print(i)
+            output = torch.concatenate([output, pred_pose[:,[-1],:]], dim = 1)
+        self.train()
+        return output[:,1:,:]
