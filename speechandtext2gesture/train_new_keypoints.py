@@ -53,6 +53,10 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     pose_Y = torch.tensor(pose_Y).float().to(device)
     zero_Y = torch.zeros(size=(pose_Y.size(0), 1, pose_Y.size(2))).to(device)
     pose_Y = torch.concatenate([zero_Y, pose_Y], dim = 1) #最初の時系列が0で埋め尽くされたposeができた
+    """
+    収束性のため、pose_Yは100で割ることとする
+    """
+    pose_Y = pose_Y / 100.0 
     fake_pose_Y = G_model(audio_X, pose_Y)
     #事情によりkeypoints to trainはなしで
     pose_Y_input = torch.concatenate([pose_Y[:,1:,:],to_motion_delta(pose_Y[:,1:,:])], dim =1)
@@ -69,6 +73,10 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     pose_Y = torch.tensor(pose_Y).float().to(device)
     zero_Y = torch.zeros(size=(pose_Y.size(0), 1, pose_Y.size(2))).to(device)
     pose_Y = torch.concatenate([zero_Y, pose_Y], dim = 1)
+    """
+    収束性のため、pose_Yは100で割ることとする
+    """
+    pose_Y = pose_Y / 100.0 
     pose_Y_motion = to_motion_delta(pose_Y[:,1:,:])
     fake_pose_Y = G_model(audio_X, pose_Y)
     fake_pose_Y_motion = to_motion_delta(fake_pose_Y[:,:-1,:])
@@ -109,7 +117,12 @@ if __name__ == "__main__":
     G_losses = [0] * args.epochs
     D_losses = [0] * args.epochs
     epochs = [0] * args.epochs
+    G_model.train()
+    D_model.train()
     for epoch in tqdm(range(args.epochs)):
+        """
+        思ったより損失がでかくなるが、それは正規化をしてないのが理由なので落ち込みすぎないように<-100.0で割ったから改善するはず。
+        """
         G_loss, D_loss = train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,args.batch_size,device)
         G_losses[epoch] = G_loss
         D_losses[epoch] = D_loss

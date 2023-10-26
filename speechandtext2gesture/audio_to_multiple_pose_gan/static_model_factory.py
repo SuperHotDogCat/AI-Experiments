@@ -8,7 +8,7 @@ from audio_to_multiple_pose_gan.torch_layers import ConvNormRelu, UpSampling1D, 
 from einops import rearrange
 import torchaudio
 
-device = "cuda" if torch.cuda.is_available() else "cpu"
+device = "cuda:0" if torch.cuda.is_available() else "cpu"
 def torch_mel_spectograms(X_audio):
     if not isinstance(X_audio, torch.Tensor):
         X_audio = torch.tensor(X_audio)
@@ -270,8 +270,17 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         decoderlayer = nn.TransformerDecoderLayer(104, nhead=4, dim_feedforward=104 * 4, activation="gelu",batch_first=True, bias=False)
         self.transformerdecoder = nn.TransformerDecoder(decoderlayer, num_layers=2,)
 
-        self.positioning_encoding_src = nn.Parameter(torch.zeros(1, 256, 104))
+        self.positioning_encoding_src = nn.Parameter(torch.zeros(1, 64, 104))
         self.positioning_encoding_tgt = nn.Parameter(torch.zeros(1, 65, 104))
+
+        self.decoder = nn.Sequential(
+            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),
+            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),
+            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),
+            ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),
+        )
+
+        self.logits = nn.Conv1d(in_channels=256, out_channels=out_channels, kernel_size=1, stride=1, padding="same")
     def forward(self, x_audio,Y_pose, device = device, mask = True):
         #x_audio = input_dict['audio']
         """
@@ -285,14 +294,19 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         input_data = self.resize(input_data)
         input_data = torch.squeeze(input_data, dim = 3)
         input_data = self.transformerencoder(input_data)
-        input_data = self.linear(input_data)
+        input_data = self.decoder(input_data)
+        input_data = self.logits(input_data)
+        input_data = rearrange(input_data, "b s o->b o s")
+
         input_data = input_data + self.positioning_encoding_src[:,:input_data.size(1),:]
         if mask:
-            mask = self.create_mask(Y_pose, device)
+            mask = self.create_mask(Y_pose, device = device)
             Y_pose = Y_pose + self.positioning_encoding_tgt[:,:Y_pose.size(1),:]
             input_data = self.transformerdecoder(tgt = Y_pose, memory = input_data, tgt_is_causal = True, tgt_mask = mask)
         else:
+            Y_pose = Y_pose + self.positioning_encoding_tgt[:,:Y_pose.size(1),:]
             input_data = self.transformerdecoder(tgt = Y_pose, memory = input_data)
+
         return input_data
     
     def create_mask(self, x: torch.tensor, device: str = device):
@@ -310,13 +324,21 @@ class Audio2PoseGANS_STTransformer(nn.Module):
     
     @torch.no_grad
     def predict(self, x_audio: torch.Tensor, pose_size = 104, seq_len = 64, device = device):
-        self.eval()
+        self = self.train()
+        self.downsampling_block1.eval()
+        self.downsampling_block2.eval()
+        self.downsampling_block3.eval()
+        self.downsampling_block4.eval()
+        self.resize.eval()
+        self.transformerdecoder.eval()
+        self.decoder.eval()
+        self.logits.eval()
+
         if len(x_audio.shape) != 2:
             x_audio = x_audio.unsqueeze(0)
         output = torch.zeros(size=(x_audio.size(0), 1, pose_size)).to(device)
         for i in range(seq_len):
-            pred_pose = self(x_audio, output,)
-            print(i)
+            pred_pose = self.forward(x_audio, output,device=device)
             output = torch.concatenate([output, pred_pose[:,[-1],:]], dim = 1)
-        self.train()
+        self = self.train()
         return output[:,1:,:]

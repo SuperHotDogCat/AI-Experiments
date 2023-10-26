@@ -13,6 +13,7 @@ from logging import getLogger
 logging.basicConfig()
 logger = getLogger("model.logger")
 from audio_to_multiple_pose_gan.static_model_factory import Audio2PoseGANS
+from audio_to_multiple_pose_gan.static_model_factory import Audio2PoseGANSTransformer
 import torch
 from common.consts import POSE_SAMPLE_SHAPE, AUDIO_SHAPE
 import warnings
@@ -25,7 +26,7 @@ def create_args():
     parser.add_argument('--dataset', '-d', type=str, default="~/Desktop/AI-Experiments/speechandtext2gesture/Gestures/train.csv", help="DATAPATH")
     parser.add_argument('--speaker', '-s', type=str, default="shelly")
     parser.add_argument('--output_path', '-op', type=str, default="pred_videos")
-    parser.add_argument('--param_path', '-p', type = str, default = "params/G_model_last.pth")
+    parser.add_argument('--param_path', '-p', type = str, default = "params/G_transformermodel_last.pth")
     args = parser.parse_args()
     return args
 @torch.no_grad
@@ -41,7 +42,7 @@ def predict_df(G_model, df, cfg, shift_pred=(900, 290), shift_gt=(1900, 280), li
             except Exception as e:
                 logger.exception(e)
                 continue
-
+            print(keypoints1.shape)
             keypoints1_list.append(keypoints1)
             keypoints2_list.append(keypoints2)
         return np.array(keypoints1_list), np.array(keypoints2_list)
@@ -84,10 +85,11 @@ def save_prediction_video(df, keypoints_pred, output_path, limit = None):
 
 if __name__ == "__main__":
     args = create_args()
-    G_model = Audio2PoseGANS(1, POSE_SAMPLE_SHAPE[-1]).to(device)
+    G_model = Audio2PoseGANSTransformer(1, POSE_SAMPLE_SHAPE[-1]).to(device)
     G_model = torch.compile(G_model)
     G_model.load_state_dict(torch.load(args.param_path))
     G_model.eval()
+    G_model.transformerencoder.train()
     data_csv: str = args.dataset
     df = pd.read_csv(data_csv)
     cfg: dict = {"processor": "audio_to_pose", "input_shape": [None, AUDIO_SHAPE]} #processorはaudio_to_pose_inferenceかもしれない
