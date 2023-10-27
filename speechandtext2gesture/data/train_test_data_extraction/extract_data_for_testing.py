@@ -11,7 +11,10 @@ from common.audio_lib import get_img_pos_wav, get_interval_start_end
 from tqdm import tqdm
 from logging import getLogger
 logger = getLogger("train.saver")
+SR = 16000
 # logger.setLevel(logging.ERROR)
+#python -m data.train_test_data_extraction.extract_data_for_testing --base_dataset_path Gestures 
+#--speaker shelly --save_path Gestures/test_256_all --csv_path Gestures/frames_df_10_19_19.csv
 parser = argparse.ArgumentParser(description='Description of your program')
 parser.add_argument('-c','--csv_path', default='/data/efros/dataset/Gestures/frames_df_2_16_19.csv')
 parser.add_argument('-sp','--save_path', default='/data/efros/dataset/Gestures_extras/test_256_all/') # 1 to save 0 to skip audio
@@ -44,8 +47,8 @@ def main():
     grouped = grouped[grouped['ones'] >= num_frames][['interval_id']]
     df = df.merge(grouped, on='interval_id')
 
-    print "Number of frames: %s"%(len(df))
-
+    #print "Number of frames: %s"%(len(df))
+    print(len(df))
 
     dfs = [df[df['speaker'] == speaker] for speaker in df['speaker'].unique()]
     del df

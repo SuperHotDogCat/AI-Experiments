@@ -235,7 +235,7 @@ class Audio2PoseGANSTransformer(nn.Module):
         return input_data
     
 class Audio2PoseGANS_STTransformer(nn.Module):
-    def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, norm = 'batch', pose_size = 64):
+    def __init__(self, in_channels, out_channels = 98, reuse = False, is_Training = False, norm = 'batch', pose_size = 64, pose_embed_size = 104, nhead = 4):
         super().__init__()
         #paddingがpytorchだと保護されていないようなので治すこと
         self.downsampling_block1 = nn.Sequential(
@@ -262,16 +262,16 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         """
         self.resize = transforms.Resize((pose_size,1), InterpolationMode.BILINEAR)
 
-        encoderlayer = nn.TransformerEncoderLayer(64, nhead=4, dim_feedforward=64 * 4, activation="gelu",batch_first=True, bias=False)
-        self.transformerencoder = nn.TransformerEncoder(encoderlayer, num_layers=2,)
+        encoderlayer = nn.TransformerEncoderLayer(64, nhead=nhead, dim_feedforward=64 * 4, activation="gelu",batch_first=True, bias=False)
+        self.transformerencoder = nn.TransformerEncoder(encoderlayer, num_layers=4,)
 
-        self.linear = nn.Linear(64, 104)
+        self.linear = nn.Linear(64, pose_embed_size)
 
-        decoderlayer = nn.TransformerDecoderLayer(104, nhead=4, dim_feedforward=104 * 4, activation="gelu",batch_first=True, bias=False)
-        self.transformerdecoder = nn.TransformerDecoder(decoderlayer, num_layers=2,)
+        decoderlayer = nn.TransformerDecoderLayer(pose_embed_size, nhead=nhead, dim_feedforward=pose_embed_size * 4, activation="gelu",batch_first=True, bias=False)
+        self.transformerdecoder = nn.TransformerDecoder(decoderlayer, num_layers=4,)
 
-        self.positioning_encoding_src = nn.Parameter(torch.zeros(1, 64, 104))
-        self.positioning_encoding_tgt = nn.Parameter(torch.zeros(1, 65, 104))
+        self.positioning_encoding_src = nn.Parameter(torch.zeros(1, 64, pose_embed_size))
+        self.positioning_encoding_tgt = nn.Parameter(torch.zeros(1, 65, pose_embed_size))
 
         self.decoder = nn.Sequential(
             ConvNormRelu(in_channels=256, out_channels=256, leaky=True, downsample=False, norm=norm),

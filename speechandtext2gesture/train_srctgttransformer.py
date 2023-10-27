@@ -53,10 +53,6 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     pose_Y = torch.tensor(pose_Y).float().to(device)
     #zero_Y = torch.zeros(size=(pose_Y.size(0), 1, pose_Y.size(2))).to(device)
     #pose_Y = torch.concatenate([zero_Y, pose_Y], dim = 1) #最初の時系列が0で埋め尽くされたposeができた
-    """
-    収束性のため、pose_Yは100で割ることとする
-    """
-    pose_Y = pose_Y / 100.0 
     fake_pose_Y = G_model(audio_X, pose_Y)
     #事情によりkeypoints to trainはなしで
     pose_Y_input = torch.concatenate([pose_Y[:,1:,:],to_motion_delta_2(pose_Y[:,1:,:])], dim =1)
@@ -76,7 +72,6 @@ def train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,batch_size
     """
     収束性のため、pose_Yは100で割ることとする
     """
-    pose_Y = pose_Y / 100.0 
     pose_Y_motion = to_motion_delta_2(pose_Y[:,1:,:])
     fake_pose_Y = G_model(audio_X, pose_Y)
     fake_pose_Y_motion = to_motion_delta_2(fake_pose_Y[:,:-1,:])
@@ -94,8 +89,8 @@ if __name__ == "__main__":
     model, optimizers定義
     """
     device = "cuda" if torch.cuda.is_available() else "cpu"
-    G_model = Audio2PoseGANS_STTransformer(1, POSE_SAMPLE_SHAPE[-1]+6).to(device) #つまりPOSESAMPLESHAPE[-1] = 98 　+6は顔とかの文
-    D_model = D_patchgan(in_channels=FRAMES_PER_SAMPLE+FRAMES_PER_SAMPLE-3, linear_size=26).to(device) #つまりFRAMESPERSAMPLE=64でto_motion_deltaを組み合わせた動きとする
+    G_model = Audio2PoseGANS_STTransformer(1, POSE_SAMPLE_SHAPE[-1], pose_embed_size=98, nhead=2).to(device) #つまりPOSESAMPLESHAPE[-1] = 98
+    D_model = D_patchgan(in_channels=FRAMES_PER_SAMPLE+FRAMES_PER_SAMPLE-3, linear_size=24).to(device) #つまりFRAMESPERSAMPLE=64でto_motion_deltaを組み合わせた動きとする
     """
     ここのin channnels変えました
     """
@@ -110,7 +105,7 @@ if __name__ == "__main__":
     train_csv: str = args.dataset_path #ウルトラハードコーディングだがしょうがない
     df = pd.read_csv(train_csv)
 
-    cfg: dict = {"processor": "audio_to_pose_new_keypoints", "input_shape": [None, AUDIO_SHAPE], "new_keypoints":True}
+    cfg: dict = {"processor": "audio_to_pose", "input_shape": [None, AUDIO_SHAPE],}
     process_row, decode_pose = get_processor(cfg)
     #row = df.sample(n=1).iloc[0]
     #audio_X, pose_Y = generate_batch(df, process_row, args.batch_size)  でデータを取り出す。
@@ -123,9 +118,6 @@ if __name__ == "__main__":
     G_model.train()
     D_model.train()
     for epoch in tqdm(range(args.epochs)):
-        """
-        思ったより損失がでかくなるが、それは正規化をしてないのが理由なので落ち込みすぎないように<-100.0で割ったから改善するはず。
-        """
         G_loss, D_loss = train(G_model, D_model, optimizer_g, optimizer_d, df, process_row,args.batch_size,device)
         G_losses[epoch] = G_loss
         D_losses[epoch] = D_loss
@@ -133,11 +125,11 @@ if __name__ == "__main__":
         if (epoch+1) % 100 == 0:
             print(f"epoch: {epoch + 1}, G_loss: {G_loss}, D_loss: {D_loss}")
         if (epoch+1) % 10000 == 0:
-            torch.save(G_model.state_dict(), f"params/G_transformermodel_newkeypoints_{epoch+1}.pth")
-    torch.save(G_model.state_dict(), "params/G_transformermodel_newkeypoints_last.pth")
-    torch.save(D_model.state_dict(), "params/D_transformermodel_newkeypoints_last.pth")
+            torch.save(G_model.state_dict(), f"params/G_srctgttransformermodel_{epoch+1}.pth")
+    torch.save(G_model.state_dict(), "params/G_srctgttransformermodel_last.pth")
+    torch.save(D_model.state_dict(), "params/D_srctgttransformermodel_last.pth")
     plt.plot(epochs, G_losses)
     plt.plot(epochs, D_losses)
     plt.legend(["Generator Loss", "Discriminator Loss"])
-    plt.savefig("NEWKEYPOINTSTransformerLossGraph.png")
+    plt.savefig("srctgtTransformerLossGraph.png")
     plt.show()
