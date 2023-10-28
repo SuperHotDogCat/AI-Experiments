@@ -66,4 +66,4 @@ if __name__ == "__main__":
     cv2.destroyAllWindows()
     #!echo y | ffmpeg -framerate 30 -i frame_%04d.png -c:v libx264 -pix_fmt yuv420p output.mp4
     subprocess.run(['ffmpeg', '-framerate', "30", '-i', 'frame_%04d.png', '-c:v','libx264','-pix_fmt','yuv420p',output_video_path])
-    subprocess.run(['rm','frame_%04d.png'])
+    subprocess.run(['rm','frame_[0-9][0-9][0-9][0-9].png'])

@@ -113,7 +113,7 @@ def save_video(temp_folder, keypoints1, output_fn, delete_tmp=True):
         subprocess.call('rm -R "%s"' % (temp_folder), shell=True)
         
 def draw_poses(img, keypoints1, output=None, show=True,\
-                            title=f"Prediction", img_size=(3000, 1000)):
+                            title=f"", img_size=(3000, 1000)):
     plt.close("all")
     fig = plt.figure(figsize=(6, 4), dpi=400)
     plt.axis('off')
