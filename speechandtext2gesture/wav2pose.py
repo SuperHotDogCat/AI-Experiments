@@ -104,11 +104,15 @@ def predict_wav(G_model: nn.Module, wavforms: list, device: str = device, ):
 
 if __name__ == "__main__":
     args = create_args()
-    G_model = Audio2PoseGANSTransformer(1, POSE_SAMPLE_SHAPE[-1]).to(device)
+    G_model = Audio2PoseGANSTransformer(1, POSE_SAMPLE_SHAPE[-1]).to(device) #transformerモデル
+    #G_model = Audio2PoseGANS(1, POSE_SAMPLE_SHAPE[-1]).to(device) #GANSモデル
     G_model = torch.compile(G_model)
     G_model.load_state_dict(torch.load(args.param_path))
     G_model.eval()
-    G_model.transformerencoder.train()
+    try:
+        G_model.transformerencoder.train()
+    except:
+        print("")
     wav, sr = raw_repr(args.wav, sr = SR)
     wav = wav[np.newaxis,:]
     cfg: dict = {"processor": "audio_to_pose", "input_shape": [None, AUDIO_SHAPE]} #processorはaudio_to_pose_inferenceかもしれない

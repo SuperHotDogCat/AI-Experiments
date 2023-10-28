@@ -1,6 +1,6 @@
 import matplotlib
 from common.pose_logic_lib import translate_keypoints
-from common.pose_plot_lib import save_side_by_side_video
+from common.pose_plot_lib import save_video
 matplotlib.use('Agg')
 import os
 import argparse
@@ -12,12 +12,14 @@ import logging
 from logging import getLogger
 logging.basicConfig()
 logger = getLogger("model.logger")
-from audio_to_multiple_pose_gan.static_model_factory import Audio2PoseGANS, Audio2PoseGANSTransformer
+from audio_to_multiple_pose_gan.static_model_factory import Audio2PoseGANS_STTransformer
 import torch
 from common.consts import POSE_SAMPLE_SHAPE, AUDIO_SHAPE
 import warnings
 warnings.simplefilter('ignore')
 import gc
+
+# python predict_to_srctgtvideos.py
 
 device = "cuda" if torch.cuda.is_available() else "cpu"
 def create_args():
@@ -25,7 +27,7 @@ def create_args():
     parser.add_argument('--dataset', '-d', type=str, default="~/Desktop/AI-Experiments/speechandtext2gesture/Gestures/train.csv", help="DATAPATH")
     parser.add_argument('--speaker', '-s', type=str, default="shelly")
     parser.add_argument('--output_path', '-op', type=str, default="pred_videos")
-    parser.add_argument('--param_path', '-p', type = str, default = "params/G_model_last.pth")
+    parser.add_argument('--param_path', '-p', type = str, default = "params/G_srctgttransformermodel_last.pth")
     args = parser.parse_args()
     return args
 @torch.no_grad
@@ -55,8 +57,11 @@ def predict_row(G_model, row, cfg, shift_pred=(0, 0), shift_gt=(0, 0)):
         # pred_pose = G_model(X)をしているに等しい
         x = torch.tensor(x).float().to(device)
         x = x.unsqueeze(0)
-        pred_pose = G_model(x)
-        pred_pose = pred_pose.cpu().detach().numpy()
+        bg_pose = torch.tensor(y).float().to(device) #(1,64,98)
+        bg_pose = bg_pose.unsqueeze(0)
+        bg_pose = bg_pose[:,[0],:]
+        pred_pose = G_model.predict(x, pose_size = 98, begin_pose = bg_pose)
+        pred_pose = pred_pose.detach().cpu().numpy()
         return post_process(pred_pose, y, shift_gt, shift_pred, decode_pose, row)
 @torch.no_grad
 def post_process(res, y, shift_gt, shift_pred, decode_pose, row):
@@ -65,7 +70,7 @@ def post_process(res, y, shift_gt, shift_pred, decode_pose, row):
 def post_process_output(res, decode_pose, shift, speaker):
     return decode_pose(res, shift, speaker) #decode_pose(pose_Y, shift = [0,0], speaker="shelly").shape = (64, 2, 49) Y.shape (64, 98)が(64, 2, 49)に変換された。
 @torch.no_grad
-def save_prediction_video(df, keypoints_pred, keypoints_gt, output_path, limit = None):
+def save_prediction_video(df, keypoints_pred, output_path, limit = None):
     #videoをsaveする関数を組む
     if limit == None:
         limit = len(df)
@@ -73,35 +78,28 @@ def save_prediction_video(df, keypoints_pred, keypoints_gt, output_path, limit =
         try:
             row = df.iloc[i]
             keypoints1 = keypoints_pred[i]
-            keypoints2 = keypoints_gt[i]
             dir_name = os.path.join(output_path, "pred_videos")
             if not os.path.exists(dir_name):
                 os.makedirs(dir_name)
             interval_id = row["interval_id"]
             output_fn = os.path.join(dir_name, f"{interval_id}.mp4")
-            save_side_by_side_video(dir_name, keypoints1, keypoints2, output_fn, delete_tmp=False)
+            save_video(dir_name, keypoints1, output_fn, delete_tmp=False)
         except Exception as e:
                 logger.exception(e)
 
 if __name__ == "__main__":
     args = create_args()
-    #G_model = Audio2PoseGANS(1, POSE_SAMPLE_SHAPE[-1]).to(device)
-    G_model = Audio2PoseGANSTransformer(1, POSE_SAMPLE_SHAPE[-1]).to(device)
+    G_model = Audio2PoseGANS_STTransformer(1, POSE_SAMPLE_SHAPE[-1], pose_embed_size=98, nhead=2).to(device)
     G_model = torch.compile(G_model)
     G_model.load_state_dict(torch.load(args.param_path))
     G_model.eval()
-    try:
-         G_model.transformerencoder.train()
-    except:
-         print("")
     data_csv: str = args.dataset
     df = pd.read_csv(data_csv)
-    cfg: dict = {"processor": "audio_to_pose", "input_shape": [None, AUDIO_SHAPE]} #processorはaudio_to_pose_inferenceかもしれない
+    cfg: dict = {"processor": "audio_to_pose", "input_shape": [None, AUDIO_SHAPE],}
     keypoints1_list, keypoints2_list = predict_df(G_model, df, cfg, [0,0], [0,0], limit = 1)
     del G_model
     gc.collect()
     torch.cuda.empty_cache()
-    keypoints1_list = translate_keypoints(keypoints1_list, [900, 290])
-    keypoints2_list = translate_keypoints(keypoints2_list, [1900, 280])
+    keypoints1_list = translate_keypoints(keypoints1_list, [1500, 500])
     limit = len(keypoints1_list)
-    save_prediction_video(df, keypoints1_list, keypoints2_list, args.output_path, limit = limit)
+    save_prediction_video(df, keypoints1_list, args.output_path, limit = limit)

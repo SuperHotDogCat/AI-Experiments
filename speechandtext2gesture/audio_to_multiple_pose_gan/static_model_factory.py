@@ -7,6 +7,7 @@ from audio_to_multiple_pose_gan.torch_layers import ConvNormRelu, UpSampling1D, 
 
 from einops import rearrange
 import torchaudio
+import numpy as np
 
 device = "cuda:0" if torch.cuda.is_available() else "cpu"
 def torch_mel_spectograms(X_audio):
@@ -323,7 +324,7 @@ class Audio2PoseGANS_STTransformer(nn.Module):
         return mask
     
     @torch.no_grad
-    def predict(self, x_audio: torch.Tensor, pose_size = 104, seq_len = 64, device = device):
+    def predict(self, x_audio: torch.Tensor, pose_size = 104, seq_len = 64, device = device, begin_pose: np.ndarray = None):
         self = self.train()
         self.downsampling_block1.eval()
         self.downsampling_block2.eval()
@@ -336,9 +337,12 @@ class Audio2PoseGANS_STTransformer(nn.Module):
 
         if len(x_audio.shape) != 2:
             x_audio = x_audio.unsqueeze(0)
-        output = torch.zeros(size=(x_audio.size(0), 1, pose_size)).to(device)
+        try:
+            output = torch.tensor(begin_pose).to(device)
+        except:
+            output = torch.zeros(size=(x_audio.size(0), 1, pose_size)).to(device)
         for i in range(seq_len):
-            pred_pose = self.forward(x_audio, output,device=device)
+            pred_pose = self.forward(x_audio, output,device=device, mask=False)
             output = torch.concatenate([output, pred_pose[:,[-1],:]], dim = 1)
         self = self.train()
         return output[:,1:,:]

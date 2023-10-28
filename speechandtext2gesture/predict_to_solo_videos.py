@@ -86,6 +86,7 @@ def save_prediction_video(df, keypoints_pred, output_path, limit = None):
 if __name__ == "__main__":
     args = create_args()
     G_model = Audio2PoseGANSTransformer(1, POSE_SAMPLE_SHAPE[-1]).to(device)
+    #G_model = Audio2PoseGANS(1, POSE_SAMPLE_SHAPE[-1]).to(device)
     G_model = torch.compile(G_model)
     G_model.load_state_dict(torch.load(args.param_path))
     G_model.eval()

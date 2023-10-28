@@ -13,8 +13,7 @@ from logging import getLogger
 logger = getLogger("train.saver")
 SR = 16000
 # logger.setLevel(logging.ERROR)
-#python -m data.train_test_data_extraction.extract_data_for_testing --base_dataset_path Gestures 
-#--speaker shelly --save_path Gestures/test_256_all --csv_path Gestures/frames_df_10_19_19.csv
+#python -m data.train_test_data_extraction.extract_data_for_testing --base_dataset_path Gestures --speaker shelly --save_path Gestures/test_256_all --csv_path Gestures/frames_df_10_19_19.csv
 parser = argparse.ArgumentParser(description='Description of your program')
 parser.add_argument('-c','--csv_path', default='/data/efros/dataset/Gestures/frames_df_2_16_19.csv')
 parser.add_argument('-sp','--save_path', default='/data/efros/dataset/Gestures_extras/test_256_all/') # 1 to save 0 to skip audio
