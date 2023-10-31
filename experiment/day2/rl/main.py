@@ -7,10 +7,10 @@ from print_buffer import PrintBuffer
 # 環境と agent を用意
 env = gym.make('EasyMaze-v0')
 # env = gym.make('CartPole-v0')
-#agent = agents.RandomAgent(env)
+agent = agents.RandomAgent(env)
 # agent = agents.RulebaseAgent(env)
 #agent = agents.TableQAgent(env)
-agent = agents.DQNAgent(env)
+#agent = agents.DQNAgent(env)
 
 
 # 描画設定

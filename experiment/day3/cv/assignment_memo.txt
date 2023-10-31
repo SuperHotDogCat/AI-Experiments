@@ -29,6 +29,7 @@
 
 課題4.2.8 カス結果に、acc 13.5%
 課題4.2.9
+train_cifar_10_improved.pyに書き換えた。OptimizerにAdamを用いた。
 [epoch 1] loss: 32.220
 [epoch 2] loss: 31.825
 [epoch 3] loss: 30.695
@@ -74,6 +75,8 @@ data/mini_cifar/train/./airplane/fighter_aircraft_s_000450.png
 data/mini_cifar/train/./airplane/jetliner_s_001797.png
 data/mini_cifar/train/./airplane/airbus_s_002169.png
 課題4.3.3 
+network_db_overwrittenで深層6層目を使うようにした。
+create_db_overwritten.pyでデータベースを構築
 実行コマンド python search_overwritten.py -i data/mini_cifar/test/airplane/airbus_s_001414.png
 src_feature's shape:  torch.Size([1, 1000])
 data/mini_cifar/train/./airplane/airbus_s_002169.png
@@ -81,7 +84,10 @@ data/mini_cifar/train/./airplane/stealth_bomber_s_001537.png
 data/mini_cifar/train/./airplane/jumbo_jet_s_000551.png
 data/mini_cifar/train/./airplane/jumbojet_s_000520.png
 data/mini_cifar/train/./airplane/hangar_queen_s_000152.png
-結果が変化してしまった。
+結果が変化した。
 
-課題4.3.3
+
+課題4.3.4
 MNISTの訓練 python train_mnist_mlp.py -g 0   
+create_db_mnist.pyでデータベースを構築
+search_mnist.pyを実行すれば検索が行える。

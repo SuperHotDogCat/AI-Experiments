@@ -141,6 +141,8 @@ class TableQAgent(abstract_agent.Agent):
             action = np.random.choice([max_q_action, random_action], p = [1-self.exploration_prob, self.exploration_prob])# here #
         else:
             action = max_q_action
+        #action = np.random.choice([max_q_action, random_action], p = [1-self.exploration_prob, self.exploration_prob])# here #
+        
         #raise NotImplementedError()
         # ------------
         return action

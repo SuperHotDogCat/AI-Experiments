@@ -1,5 +1,7 @@
-課題2.7.1 loss 10.19566848014295 入力:
-課題2.7.2 loss 5.315497407019138 入力:
-課題2.7.3 loss 7.527366754546762 入力:i have a 出力:i have a strong backend.
-課題2.7.4,2.7.5 loss 13.631393798589706 入力:you are a person. 出力:私達はどうなりましたか
-課題2.7.6 入力:i am a person. 出力:まるで腰がくかもかを感じる。
+課題2.7.1 loss 10.19566848014295 python language_model_rnn_train.py実行後にpython language_model_rnn_test.pyを実行すればデモができる(未知語対応済み)
+課題2.7.2 loss 5.315497407019138 language_model_lstm.pyを編集した。Pytorch2.0系で動くようにした。language_model_lstm_train.py実行後 language_model_lstm_test.py実行でデモができる
+課題2.7.3 loss 7.527366754546762 language_model_lstm_train_eng.py実行後 language_model_lstm_test_eng.py実行でデモができる
+課題2.7.4,2.7.5 loss 13.631393798589706 translator_model_train.py実行後, translator_model_test実行でデモができる。
+課題2.7.6 一応translator_model_train_full.pyとtranslator_model_test_full.pyを書いておいた
+課題2.7.7 sentence_data.pyを書き換えて<UNKNOWN>トークンを追加しておいた。
+課題2.7.8 それぞれのtrain.pyを未知語対応した。
